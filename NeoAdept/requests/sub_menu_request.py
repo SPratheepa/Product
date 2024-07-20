@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request
-from ..pojo.ui_template.sub_menu import SUB_MENU
+from ..pojo.sub_menu import SUB_MENU
 
 class create_sub_menu_request(Base_Request):
     

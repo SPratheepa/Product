@@ -1,8 +1,8 @@
 from NeoAdept.gbo.bo import Pagination
-from NeoAdept.pojo.permission.permission_details import ROLE_PERMISSION
+from NeoAdept.pojo.permission_details import ROLE_PERMISSION
 
-from NeoAdept.pojo.user.user_details import USER_DETAILS
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.user_details import USER_DETAILS
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
 from NeoAdept.utilities.constants import CONSTANTS
 from ..gbo.common import Custom_Error
 from ..utilities.utility import Utility

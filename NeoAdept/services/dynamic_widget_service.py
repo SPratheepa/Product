@@ -2,9 +2,9 @@ import json
 import logging
 from flask import jsonify
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Table, and_, or_
-from NeoAdept.pojo.ui_template.dynamic_widget import DYNAMIC_WIDGET
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
-from NeoAdept.pojo.user.user_details import USER_DETAILS
+from NeoAdept.pojo.dynamic_widget import DYNAMIC_WIDGET
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.user_details import USER_DETAILS
 from NeoAdept.services.common_service import Common_Service
 import pymongo
 from NeoAdept.gbo.bo import Base_Response, Pagination

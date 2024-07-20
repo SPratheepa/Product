@@ -38,7 +38,7 @@ class NeoAdeptApp:
     def __init__(self, app_name):
         self.app = Flask(app_name) 
         self.config = Config()
-        connection_manager = Collection_Manager(self.config.db_url,self.config.max_pool_size)
+        connection_manager = Collection_Manager(self.config)
         self.db = connection_manager.connect_db(self.config.db_name)
 
         self.keyset_map,self.keyset_map_index,self.filters,self.keyset_map_dt = self.load_keyset_mapping()
@@ -135,7 +135,7 @@ class NeoAdeptApp:
                 keyset_map_dt[collection_name] = DB_Utility.extract_all_keys_from_json_with_dt(collection_sample)
                 if 'filters' in keyset_map_index[collection_name]:
                     filters[collection_name] = keyset_map_index[collection_name].get('filters')
-            return keyset_map,keyset_map_index,filters ,keyset_map_dt             
+        return keyset_map,keyset_map_index,filters ,keyset_map_dt             
         
     def generate_log_file_path(self):
         try:
@@ -198,7 +198,6 @@ class NeoAdeptApp:
 
         common_args = (self.config, self.logger, self.db, self.keyset_map,self.session)
         routes_with_extra_args = [
-            (Login_Route, (self.server_private_key, self.decryption_apis)),
             (Dropdown_Route, ( self.filters,)),
             (Dynamic_DB_Route, (self.keyset_map_dt, self.sql_db, self.sql_table_list)),
             (Dynamic_widget_Route, (self.keyset_map_dt, self.sql_db)),
@@ -214,7 +213,7 @@ class NeoAdeptApp:
             My_List_Route, Activity_Route,  Common_Route, Email_Route, 
             Register_Route, Permission_Route
         ]
-
+        self.app.register_blueprint(Login_Route('login_route', __name__,self.config,self.logger,self.db,self.keyset_map,self.session,self.server_private_key,self.decryption_apis),url_prefix=f"{versioned_prefix}")
         for route in routes_without_extra_args:
             route_name = route.__name__.lower().replace('_route', '')
             blueprint = route(route_name, __name__, *common_args)

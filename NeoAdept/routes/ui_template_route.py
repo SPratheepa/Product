@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from NeoAdept.utilities.db_utility import DB_Utility
 
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..gbo.common import Custom_Error
 from ..services.ui_template_service import UI_Template_Service
 from ..services.ui_template_service_temp import UI_Template_Service_temp

@@ -77,9 +77,9 @@ class SQL_Utility:
             return Utility.generate_exception_response(e)
         return rows
 
-    def get_count(query):
+    def get_count(self,query):
         try:
-            session=db.get_session()
+            session=self.db.get_session()
             total_count = session.execute(text(query)).scalar()
             return total_count
         except Exception as e:
@@ -89,12 +89,13 @@ class SQL_Utility:
             session.close()
 
 class Collection_Manager:
-    def __init__(self,db_url,max_pool_size):
-        self.db_url = db_url
-        self.max_pool_size = max_pool_size
+    def __init__(self,config:Config):
+        self.config = config
         
     def connect_db(self,db_name):         
-        return self.configure_client(self.db_url,self.max_pool_size)[db_name]
+        db = self.configure_client(self.config.db_url,self.config.max_pool_size)[db_name]
+        # self.add_collection(db,self.config.collection_names)
+        return db
     
     def configure_client(self,db_url,max_pool_size):
         return MongoClient(db_url,maxPoolSize=max_pool_size)

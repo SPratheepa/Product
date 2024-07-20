@@ -8,9 +8,9 @@ from flask_jwt_extended import create_access_token,get_jwt
 
 from ..gbo.bo import Common_Fields
 from ..gbo.common import Custom_Error
-from ..pojo.user.user_details import USER_DETAILS
-from ..pojo.user.access_token import ACCESS_TOKEN
-from ..pojo.client.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
+from ..pojo.user_details import USER_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
+from ..pojo.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
 from ..requests.login_request import forgot_password_request, login_request,create_product_admin_request, verify_otp_request,change_password_request
 from ..services.ui_template_service import UI_Template_Service
 from ..services.ui_template_service_temp import UI_Template_Service_temp

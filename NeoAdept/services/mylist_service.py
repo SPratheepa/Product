@@ -1,11 +1,11 @@
 import copy, pandas as pd
-from NeoAdept.pojo.list.list_details import FILE_EMAIL_GROUPING, FILE_GROUP_VIEW, LIST_GROUP
+from NeoAdept.pojo.list_details import FILE_EMAIL_GROUPING, FILE_GROUP_VIEW, LIST_GROUP
 from NeoAdept.services.common_service import Common_Service
 
 from bson import ObjectId
 from flask import send_file
 
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..config import Config
 from ..gbo.bo import Common_Fields, Pagination
 from ..gbo.common import Custom_Error

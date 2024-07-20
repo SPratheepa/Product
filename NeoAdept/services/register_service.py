@@ -1,5 +1,5 @@
 from NeoAdept.gbo.bo import Pagination
-from NeoAdept.pojo.register.registration_details import REGISTRATION_DETAILS
+from NeoAdept.pojo.registration_details import REGISTRATION_DETAILS
 from NeoAdept.requests.register_request import register_client_request,update_client_status_request
 from NeoAdept.services.email_service import Email_Service
 from NeoAdept import config
@@ -10,7 +10,7 @@ from flask_jwt_extended import create_access_token,get_jwt
 
 from ..gbo.common import Custom_Error
 
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility

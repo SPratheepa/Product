@@ -7,7 +7,7 @@ from ..services.common_service import Common_Service
 from NeoAdept.gbo.common import Custom_Error
 from ..utilities.utility import Utility
 from ..utilities.constants import CONSTANTS
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 
 class Common_Route(Blueprint):
@@ -24,15 +24,15 @@ class Common_Route(Blueprint):
             '/upload_attachments': self.upload_attachments,
             '/get_doc/attachment/<module_type>/<file>': self.get_doc,
             '/get_log_details': self.get_log_details,
-            '/global_search_details': self.global_search_details,
+            ''' '/global_search_details': self.global_search_details,
             '/save_search_details': self.save_search_details,
             '/recent_search_details': self.recent_search_details,
+            '/get_history': self.get_history,'''
             '/add_module_details': self.add_module_details,
             '/get_module_details': self.get_module_details,
             '/get_document/<folder>/<file>': self.get_document,
             '/update_column_settings': self.update_column_settings,
             '/enable_user_widget': self.enable_user_widget,
-            '/get_history': self.get_history,
             '/get_db_details': self.get_db_details,
         }
     

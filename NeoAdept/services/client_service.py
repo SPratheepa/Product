@@ -6,9 +6,9 @@ from pymongo import MongoClient
 
 from ..gbo.bo import Pagination
 from ..gbo.common import Custom_Error
-from ..pojo.user.access_token import ACCESS_TOKEN
-from ..pojo.client.client_details import CLIENT_DETAILS
-from ..pojo.user.user_details import USER_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
+from ..pojo.client_details import CLIENT_DETAILS
+from ..pojo.user_details import USER_DETAILS
 from ..requests.client_request import create_client_request,create_client_subscription_request,update_client_request,delete_client_request,upload_client_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility

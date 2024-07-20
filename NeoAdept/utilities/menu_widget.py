@@ -4,13 +4,13 @@ import numpy as np
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility,Mongo_DB_Manager
 from ..utilities.utility import Utility
-from NeoAdept. pojo.common.directory import DIRECTORY
+from NeoAdept. pojo.directory import DIRECTORY
 from ..gbo.common import Custom_Error
-from NeoAdept.pojo.ui_template.page import PAGE
-from NeoAdept.pojo.ui_template.role import ROLE
-from NeoAdept.pojo.ui_template.sub_menu import SUB_MENU
-from NeoAdept.pojo.ui_template.menu import MENU
-from NeoAdept.pojo.ui_template.widget import WIDGET
+from NeoAdept.pojo.page import PAGE
+from NeoAdept.pojo.role import ROLE
+from NeoAdept.pojo.sub_menu import SUB_MENU
+from NeoAdept.pojo.menu import MENU
+from NeoAdept.pojo.widget import WIDGET
 
 
 

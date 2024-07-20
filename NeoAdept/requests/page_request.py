@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request
-from ..pojo.ui_template.page import PAGE
+from ..pojo.page import PAGE
 class create_page_request(Base_Request):
     
     def parse_request(self):

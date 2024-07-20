@@ -5883,7 +5883,7 @@
         }
       }
     },
-    "/get_widgets": {
+    "/v1/ui_template/get_widgets": {
       "post": {
         "tags": [
           "UI Template Routes"

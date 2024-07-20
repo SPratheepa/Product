@@ -2,9 +2,9 @@
 from werkzeug.utils import secure_filename
 from NeoAdept.gbo.bo import Pagination
 from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.pojo.common.directory import DIRECTORY
-from NeoAdept.pojo.email.email_details import EMAIL_DETAILS
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.directory import DIRECTORY
+from NeoAdept.pojo.email_details import EMAIL_DETAILS
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
 from NeoAdept.services.common_service import Common_Service
 from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.constants import CONSTANTS

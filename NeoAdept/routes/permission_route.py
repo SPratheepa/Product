@@ -5,7 +5,7 @@ from ..services.permission_service import Permission_Service
 from NeoAdept.gbo.common import Custom_Error
 from ..utilities.utility import Utility
 from ..utilities.constants import CONSTANTS
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 from functools import partial
 

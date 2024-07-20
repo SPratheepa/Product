@@ -8,11 +8,11 @@ from bson import ObjectId
 
 from ..gbo.common import Custom_Error
 from ..gbo.bo import Common_Fields,Pagination
-from ..pojo.ui_template.sub_menu import SUB_MENU
-from ..pojo.ui_template.menu import MENU
-from ..pojo.ui_template.page import PAGE
-from ..pojo.ui_template.role import ROLE
-from ..pojo.ui_template.widget import WIDGET
+from ..pojo.sub_menu import SUB_MENU
+from ..pojo.menu import MENU
+from ..pojo.page import PAGE
+from ..pojo.role import ROLE
+from ..pojo.widget import WIDGET
 from ..requests.widget_request import create_widget_request
 from ..requests.sub_menu_request import create_sub_menu_request
 from ..requests.page_request import create_page_request

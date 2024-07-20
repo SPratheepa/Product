@@ -4,9 +4,8 @@ import numpy as np
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility,Mongo_DB_Manager
 from ..utilities.utility import Utility
-from NeoAdept. pojo.common.directory import DIRECTORY
+from NeoAdept. pojo.directory import DIRECTORY
 from ..gbo.common import Custom_Error
-from NeoAdept.pojo.permission.permission_details import ROLE_PERMISSION
 
 class Module_Permission:   
  

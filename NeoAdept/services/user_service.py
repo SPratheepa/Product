@@ -1,5 +1,5 @@
 from datetime import datetime
-from NeoAdept.pojo.common.directory import DIRECTORY
+from NeoAdept.pojo.directory import DIRECTORY
 from NeoAdept.services.common_service import Common_Service
 import bcrypt
 
@@ -7,9 +7,9 @@ from pymongo import MongoClient
 from flask import json, Config
 from ..gbo.bo import Pagination
 from ..gbo.common import Custom_Error
-from ..pojo.user.user_details import USER_DETAILS
-from ..pojo.client.client_details import CLIENT_DETAILS
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.user_details import USER_DETAILS
+from ..pojo.client_details import CLIENT_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
 from ..requests.user_request import create_user_request,update_user_request,delete_user_request,upload_user_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility

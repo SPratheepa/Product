@@ -1,6 +1,6 @@
 from typing import Optional,List
 from dataclasses import dataclass
-from NeoAdept.pojo.ui_template.widget import WIDGET
+from NeoAdept.pojo.widget import WIDGET
 
 @dataclass
 class PAGE:

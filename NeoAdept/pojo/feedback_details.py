@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from NeoAdept.pojo.feedback.attachment_details import Attachment
+from NeoAdept.pojo.attachment_details import Attachment
 
 
 @dataclass

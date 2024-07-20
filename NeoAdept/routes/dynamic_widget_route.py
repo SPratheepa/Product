@@ -3,7 +3,7 @@ from flask import Blueprint, g, request
 from NeoAdept.utilities.db_utility import DB_Utility
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
 from NeoAdept.services.dynamic_widget_service import Dynamic_widget_Service
 from NeoAdept.utilities.constants import CONSTANTS
 from NeoAdept.utilities.decorator import check_blacklisted_token, check_jwt_token

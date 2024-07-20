@@ -2,7 +2,7 @@ from functools import partial
 from flask import Blueprint, g, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
 
 from ..gbo.common import Custom_Error
 from ..services.dropdown_service import Dropdown_Service

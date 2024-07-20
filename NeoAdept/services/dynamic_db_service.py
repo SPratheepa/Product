@@ -1,7 +1,7 @@
 import pymongo
 from NeoAdept.gbo.bo import Base_Response, Pagination
 from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.pojo.user.access_token import ACCESS_TOKEN
+from NeoAdept.pojo.access_token import ACCESS_TOKEN
 from NeoAdept.utilities.constants import CONSTANTS
 from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from NeoAdept.utilities.utility import Utility

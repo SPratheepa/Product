@@ -1,14 +1,14 @@
 import copy
 
 from ..services.common_service import Common_Service
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..gbo.bo import Common_Fields, Pagination
 from ..gbo.common import Custom_Error
 from ..requests.activity_request import create_activity_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.utility import Utility
-from ..pojo.activity.activity_details import ACTIVITY_DETAILS
+from ..pojo.activity_details import ACTIVITY_DETAILS
 
 class Activity_Service:
     _instance = None  # Class variable to store the singleton instance

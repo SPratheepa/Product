@@ -5,11 +5,11 @@ from datetime import datetime
 from flask_jwt_extended import create_access_token,get_jwt
 
 from ..gbo.bo import Common_Fields
-from ..pojo.user.user_details import USER_DETAILS
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.user_details import USER_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
-from ..pojo.client.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
+from ..pojo.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
 #from..services.UI_template_service import UI_Template_Service
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..requests.login_request import forgot_password_request, login_request,create_product_admin_request,verify_otp_request,change_password_request

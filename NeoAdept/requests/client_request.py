@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request
-from ..pojo.client.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
+from ..pojo.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
 from ..gbo.common import Custom_Error
 from ..utilities.constants import CONSTANTS
 

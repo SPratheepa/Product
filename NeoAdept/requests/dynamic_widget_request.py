@@ -1,5 +1,5 @@
 from NeoAdept.gbo.common import Base_Request, Custom_Error
-from NeoAdept.pojo.ui_template.dynamic_widget import DYNAMIC_WIDGET
+from NeoAdept.pojo.dynamic_widget import DYNAMIC_WIDGET
 
 
 class create_dynamic_widget_request(Base_Request):

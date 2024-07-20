@@ -273,68 +273,6 @@ class Common_Service:
             return DB_Utility.convert_doc_to_cls_obj(docs,MODULE_DETAILS),count
         
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
-
-    def global_search_details(self,identity_data,request_data,db):
-        identity_data_obj = ACCESS_TOKEN(**identity_data)        
-        global_search_req_obj = Pagination(**request_data)
-        module_collection = global_search_req_obj.module_collection
-        data = {}
-        #print(f"Available globals: {list(globals().keys())}")
-        for mod_col in module_collection:
-            count,doc_objs = 0,[]
-            if mod_col in self.key_nested_key_map:
-                key_map = self.key_nested_key_map[mod_col]
-                query = DB_Utility.frame_get_query(global_search_req_obj,key_map)
-                docs,count = Mongo_DB_Manager.get_paginated_data1(db[mod_col],query,global_search_req_obj,self.projection[mod_col],key_map)
-                if docs and len(docs)>0:
-                    #count = Mongo_DB_Manager.count_documents(db[mod_col],query)
-                    data_class = globals().get(mod_col)
-                    doc_objs = DB_Utility.convert_doc_to_cls_obj(docs,data_class,self.projection[mod_col])
-            data.update({mod_col:{"data":doc_objs,"count":count}})
-        return data
-
-    def save_search_details(self,identity_data,request_data,db):
-        identity_data_obj = ACCESS_TOKEN(**identity_data)        
-        search_details_obj = SEARCH_DETAILS(**request_data)
-        search_details_obj.user = identity_data_obj.email
-        search_details_obj.search_time = Utility.get_current_time()
-        del search_details_obj._id
-        check_limitation_query = {"user":search_details_obj.user,"module":search_details_obj.module }
-        user_mod_count = Mongo_DB_Manager.count_documents(db[self.search_details],check_limitation_query)
-        if user_mod_count >= 20:
-            oldest_docs = Mongo_DB_Manager.get_last_n_docs_from_collection(db[self.search_details],check_limitation_query,19)
-            ids_to_delete = [doc['_id'] for doc in oldest_docs]
-            Mongo_DB_Manager.delete_documents(db[self.search_details],ids_to_delete)
-        check_limitation_query.update({"search_id":search_details_obj.search_id}) 
-        doc = Mongo_DB_Manager.read_one_document(db[self.search_details],check_limitation_query)
-        if doc is None:
-            inserted_id = Mongo_DB_Manager.create_document(db[self.search_details],search_details_obj.__dict__)
-        
-    def recent_search_details(self,identity_data,request_data,db):
-        identity_data_obj = ACCESS_TOKEN(**identity_data)        
-        docs = list(Mongo_DB_Manager.read_documents(db[self.search_details_view],{"user":identity_data_obj.email}))
-        result_dict = {}
-        for doc in docs:
-            module = doc['module']
-            search_id = doc['search_id']
-            # Check if the module exists in the dictionary
-            if module in result_dict:
-                result_dict[module].extend(search_id)
-            else:
-                result_dict[module] = search_id
-        data = {}
-        for mod_col,proj in self.projection.items():
-            count,doc_objs = 0,[]
-            if mod_col in result_dict:
-                ids = result_dict[mod_col] if self.recent_search_id_map.get(mod_col) else DB_Utility.str_id_list_to_obj_list(result_dict[mod_col])
-                query = {self.recent_search_id_map.get(mod_col,"_id"): {'$in': ids }}
-                docs = Mongo_DB_Manager.get_paginated_data(db[mod_col],query,None,proj)
-                if docs and len(docs)>0:
-                    count = len(docs)
-                    data_class = globals().get(mod_col)
-                    doc_objs = DB_Utility.convert_doc_to_cls_obj(docs,data_class,proj)
-            data.update({mod_col:{"data":doc_objs,"count":count}})
-        return data
     
     def save_activity_details(self,data,db):
         

@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request
-from ..pojo.ui_template.role import ROLE
+from ..pojo.role import ROLE
 
 class create_role_request(Base_Request):
     

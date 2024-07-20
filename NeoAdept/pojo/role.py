@@ -1,6 +1,6 @@
 from typing import Optional,List
 from dataclasses import dataclass
-from NeoAdept.pojo.ui_template.menu import MENU
+from NeoAdept.pojo.menu import MENU
 
 @dataclass
 class ROLE:

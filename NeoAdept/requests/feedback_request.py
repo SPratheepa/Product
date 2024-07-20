@@ -1,4 +1,4 @@
-from NeoAdept.pojo.feedback.feedback_details import FEEDBACK_DETAILS
+from NeoAdept.pojo.feedback_details import FEEDBACK_DETAILS
 from NeoAdept.gbo.common import Base_Request
 
 

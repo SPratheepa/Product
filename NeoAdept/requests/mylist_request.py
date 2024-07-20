@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request, Custom_Error
-from ..pojo.list.list_details import FILE_EMAIL_GROUPING, LIST_GROUP, MoveToListDetails
+from ..pojo.list_details import FILE_EMAIL_GROUPING, LIST_GROUP, MoveToListDetails
 
 class create_list_request(Base_Request):
 

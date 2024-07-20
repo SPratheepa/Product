@@ -4,11 +4,11 @@ from werkzeug.utils import secure_filename
 
 from NeoAdept.services.common_service import Common_Service
 
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..config import Config
 from ..gbo.bo import Common_Fields, Pagination
 from ..gbo.common import Custom_Error
-from ..pojo.feedback.feedback_details import FEEDBACK_DETAILS
+from ..pojo.feedback_details import FEEDBACK_DETAILS
 from ..requests.feedback_request import create_feedback_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager

@@ -1,4 +1,4 @@
-from NeoAdept.pojo.register.registration_details import REGISTRATION_DETAILS
+from NeoAdept.pojo.registration_details import REGISTRATION_DETAILS
 from ..utilities.constants import CONSTANTS
 from ..gbo.common import Base_Request
 from ..gbo.common import Custom_Error

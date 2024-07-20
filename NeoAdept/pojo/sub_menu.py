@@ -1,6 +1,6 @@
 from typing import Optional
 from dataclasses import dataclass
-from NeoAdept.pojo.ui_template.page import PAGE
+from NeoAdept.pojo.page import PAGE
 @dataclass
 class SUB_MENU:
         name: str 

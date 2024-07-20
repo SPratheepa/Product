@@ -1,7 +1,7 @@
 from typing import Optional, List
 from dataclasses import dataclass
-from NeoAdept.pojo.ui_template.page import PAGE
-from NeoAdept.pojo.ui_template.sub_menu import SUB_MENU
+from NeoAdept.pojo.page import PAGE
+from NeoAdept.pojo.sub_menu import SUB_MENU
 
 
 @dataclass

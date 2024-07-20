@@ -4,14 +4,14 @@ from flask import json
 from bson import ObjectId
 
 from ..gbo.bo import Pagination
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..requests.user_request import create_user_request,update_user_request,delete_user_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..gbo.common import Custom_Error
-from ..pojo.user.user_details import USER_DETAILS
-from ..pojo.client.client_details import CLIENT_DETAILS
+from ..pojo.user_details import USER_DETAILS
+from ..pojo.client_details import CLIENT_DETAILS
 
 class User_Service:  
     def __init__(self,config,logger,db,client_db,keyset_map):

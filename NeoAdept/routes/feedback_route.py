@@ -2,7 +2,7 @@ from functools import partial
 from flask import Blueprint, g, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..pojo.user.access_token import ACCESS_TOKEN
+from ..pojo.access_token import ACCESS_TOKEN
 from ..gbo.common import Custom_Error
 from ..services.feedback_service import Feedback_Service
 from ..utilities.constants import CONSTANTS

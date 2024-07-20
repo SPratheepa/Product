@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request, Custom_Error
-from ..pojo.user.user_details import USER_DETAILS
+from ..pojo.user_details import USER_DETAILS
 from ..utilities.constants import CONSTANTS
 
 class create_user_request(Base_Request):

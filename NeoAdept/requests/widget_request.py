@@ -1,5 +1,5 @@
 from ..gbo.common import Base_Request
-from ..pojo.ui_template.widget import WIDGET
+from ..pojo.widget import WIDGET
 
 class create_widget_request(Base_Request):
     

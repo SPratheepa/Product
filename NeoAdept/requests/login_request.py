@@ -1,6 +1,6 @@
 from ..utilities.constants import CONSTANTS
 from ..gbo.common import Base_Request
-from ..pojo.user.user_details import USER_DETAILS
+from ..pojo.user_details import USER_DETAILS
 from ..gbo.common import Custom_Error
 
 class create_product_admin_request(Base_Request):
