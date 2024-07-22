@@ -179,7 +179,7 @@ class Common_Service:
         
         pagination = Pagination(**request_data) 
         
-        self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
+        #self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.log_details],query,pagination) 
 

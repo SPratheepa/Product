@@ -6,6 +6,8 @@ from datetime import datetime
 from flask import Config, json,current_app,session
 from flask_jwt_extended import create_access_token,get_jwt
 
+from NeoAdept.utilities.collection_names import COLLECTIONS
+
 from ..gbo.bo import Common_Fields
 from ..gbo.common import Custom_Error
 from ..pojo.user_details import USER_DETAILS
@@ -36,12 +38,10 @@ class Login_Service:
             self.ui_template_service_tmp=UI_Template_Service_temp(logger,db,keyset_map)
             self.config = config
             self.db = db
-            self.user_details_collection = "USER_DETAILS"
-            self.client_details_collection = "CLIENT_DETAILS"
             self.mongo_client = MongoClient(self.config.db_url,maxPoolSize=self.config.max_pool_size)
             self.neo_db =  self.mongo_client[self.config.neo_db]
             self.keyset_map = keyset_map
-            self.common_service = Common_Service(logger,db,keyset_map)
+            #self.common_service = Common_Service(logger,db,keyset_map)
             self.session = session
             
         
@@ -53,14 +53,14 @@ class Login_Service:
         
         login_details_obj = create_prod_admin_request.login_details_obj
         query = {**{"email": login_details_obj.email}, **Utility.get_active_and_not_deleted_query()}
-        current_user = Mongo_DB_Manager.read_one_document(self.neo_db[self.user_details_collection], query)
+        current_user = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS], query)
         
         if not current_user:
             password = login_details_obj.password
             hashed_new_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             
             query={"client_name": CONSTANTS.NEO_CV}
-            neo_cv_client = Mongo_DB_Manager.read_one_document(self.neo_db[self.client_details_collection], query) 
+            neo_cv_client = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS], query) 
             
             if not neo_cv_client:
                 
@@ -69,7 +69,7 @@ class Login_Service:
                 subscription_details.append(subscription_detail.__dict__)
                 neo_cv_client_data = CLIENT_DETAILS(client_name=CONSTANTS.NEO_CV,api_url='13.201.157.90:82',domain='neoadepts.com',db_name=self.config.db_name,status="active",subscription_details=subscription_details,is_deleted=False,created_on=Utility.get_current_time())
                 neo_cv_client_data.__dict__.pop('_id', None)
-                neo_cv_client_id = Mongo_DB_Manager.create_document(self.neo_db[self.client_details_collection],neo_cv_client_data.__dict__)
+                neo_cv_client_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS],neo_cv_client_data.__dict__)
                 
             else:
                 
@@ -79,7 +79,7 @@ class Login_Service:
             common_fields = Common_Fields(created_on=Utility.get_current_time())
             request_data.update(common_fields.__dict__)
             
-            user_id = Mongo_DB_Manager.create_document(self.neo_db[self.user_details_collection],request_data)
+            user_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS],request_data)
             if user_id is not None: 
                 self.common_service.add_user_permission_for_user(DB_Utility.obj_id_to_str(user_id),"product_admin",self.neo_db)
                 return None
@@ -91,7 +91,7 @@ class Login_Service:
     def get_db_name(self, origin):
         domain = Utility.get_origin(origin)
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
-        client_collection = self.neo_db[self.client_details_collection]
+        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         client_info = Mongo_DB_Manager.read_one_document(client_collection,query)
         if not client_info:
             return None
@@ -110,7 +110,7 @@ class Login_Service:
         
         login_details_obj = USER_DETAILS(**login_data)
         
-        user_collection = self.mongo_client[db_name][self.user_details_collection]
+        user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
             
         current_user_obj = self.get_current_user_obj(login_details_obj.email,user_collection)       
         if not (self.password_check(current_user_obj,login_details_obj.password)):
@@ -121,7 +121,7 @@ class Login_Service:
         
     def frame_login_response(self,current_user_obj,user_collection,db,is_login=True,domain = None,login_details_obj= None):
         client_obj=None
-        client_collection = self.neo_db[self.client_details_collection]
+        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
 
         if self.config.CLIENT_ENV == CONSTANTS.CLIENT:
             current_date = Utility.get_current_date()
@@ -168,7 +168,7 @@ class Login_Service:
         role = current_user_obj.role  
         
         if current_user_obj.portal_view_id is None:
-            portal_first_user = Mongo_DB_Manager.read_one_document(db[self.user_details_collection], {})
+            portal_first_user = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_USER_DETAILS], {})
             if portal_first_user:
                 current_user_obj.portal_view_id =  portal_first_user["_id"]
                 current_user_obj.portal_view_role = portal_first_user["role"]
@@ -210,7 +210,7 @@ class Login_Service:
     
     def get_db_by_domain(self, domain):
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
-        client_collection = self.neo_db[self.client_details_collection]
+        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         client_info = Mongo_DB_Manager.read_one_document(client_collection,query)
         if not client_info:
             raise Custom_Error('domain not mapped')
@@ -224,7 +224,7 @@ class Login_Service:
         }
     
     def get_api_url(self, domain):
-        client_collection = self.neo_db[self.client_details_collection]
+        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
         client_info = Mongo_DB_Manager.read_one_document(client_collection, query)
         if not client_info:
@@ -268,7 +268,7 @@ class Login_Service:
     def reset_password(self,identity_data,db):
         
         identity_data_obj=ACCESS_TOKEN(**identity_data)
-        user_collection = db[self.user_details_collection]
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
         new_password = Utility.generate_random_password()  # Implement password generation logic
         hashed_new_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
         print("new_password ",new_password)
@@ -286,7 +286,7 @@ class Login_Service:
     def change_portal_view(self,identity_data,request_data):
         
         identity_data_obj = ACCESS_TOKEN(**identity_data)
-        user_collection = self.neo_db[self.user_details_collection]
+        user_collection = self.neo_db[COLLECTIONS.MASTER_USER_DETAILS]
         
         query = {"email": identity_data_obj.email}
         update = {"portal_view_id": request_data["_id"],"portal_view_role": request_data["role"]}
@@ -306,7 +306,7 @@ class Login_Service:
         
         login_details_obj = forgot_pswd_login_request.login_details_obj
         #user_collection = self.user_collection.get(db_name, self.client_user_details_collection)
-        user_collection = self.mongo_client[db_name][self.user_details_collection]
+        user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
         
         otp = ''.join(random.choices(string.digits, k=6))
         query = {"email": login_details_obj.email, **Utility.get_active_data_query()}
@@ -337,7 +337,7 @@ class Login_Service:
         
         login_details_obj=verify_otp_login_request.login_details_obj
         #user_collection = self.user_collection.get(db_name, self.client_user_details_collection)
-        user_collection = self.mongo_client[db_name][self.user_details_collection]
+        user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
                 
         current_user_obj = self.get_current_user_obj(login_details_obj.email,user_collection)
        
@@ -380,7 +380,7 @@ class Login_Service:
         login_data_obj=USER_DETAILS(**login_data)     
     
         #user_collection=self.client_db["USER_DETAILS"] if identity_data_obj.db_name else self.db["USER_DETAILS"]
-        user_collection = db[self.user_details_collection]
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
         current_user_obj = self.get_current_user_obj(identity_data_obj.email,user_collection)
         
         if self.password_check(current_user_obj,login_data_obj.current_password):                
@@ -403,18 +403,18 @@ class Login_Service:
         
         identity_data_obj = ACCESS_TOKEN(**identity_data)
             
-        user_collection = db[self.user_details_collection]
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
         domain = None
         if identity_data_obj.client_db_name is not None:
             domain = self.get_domain_by_db(identity_data_obj.client_db_name)
-            user_collection = self.neo_db[self.user_details_collection]
+            user_collection = self.neo_db[COLLECTIONS.MASTER_USER_DETAILS]
                     
         current_user_obj = self.get_current_user_obj(identity_data_obj.email,user_collection)    
         return self.frame_login_response(current_user_obj,user_collection,db,is_login=False,domain=domain)
     
     def get_domain_by_db(self, client_db_name):
         query = {"db_name": client_db_name, **Utility.get_active_and_not_deleted_query()}
-        client_collection = self.neo_db[self.client_details_collection]
+        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         client_info = Mongo_DB_Manager.read_one_document(client_collection,query)
         if not client_info:
             raise Custom_Error('db not available')
@@ -426,14 +426,14 @@ class Login_Service:
 
     def get_user_permissions(self, user_id, db):
         query = {'user_id': user_id}
-        user_doc = Mongo_DB_Manager.read_one_document(db[self.user_details_collection], query)
+        user_doc = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_USER_DETAILS], query)
         if user_doc:
             return user_doc.get("permissions",[])        
         return {}
 
     def get_role_permissions(self, role_name, db):
         query = {'role_name': role_name}
-        role_permissions_doc = Mongo_DB_Manager.read_one_document(db["ROLE_PERMISSION"], query)
+        role_permissions_doc = Mongo_DB_Manager.read_one_document(db["MASTER_ROLE_PERMISSION"], query)
         if role_permissions_doc:
             return role_permissions_doc.get('permissions', [])
         return {}
@@ -516,12 +516,12 @@ class Login_Service:
   
     def get_column_visibility(self, user_id,db): 
         #print("column_visibility==========",user_id,db)      
-        document = db["COLUMN_VISIBILITY"].find_one()      
+        document = db["MASTER_COLUMN_VISIBILITY"].find_one()      
         if document:
             document.pop("_id")       
             doc_keys = document.keys()      
             #print("doc_keys==========",doc_keys)           
-        user_document = Mongo_DB_Manager.read_one_document(db["USER_DETAILS"],{'_id': DB_Utility.str_to_obj_id(user_id)})     
+        user_document = Mongo_DB_Manager.read_one_document(db["MASTER_USER_DETAILS"],{'_id': DB_Utility.str_to_obj_id(user_id)})     
         #print("user_document==",user_document)
         if user_document:            
             user_document.pop("_id")  
@@ -553,7 +553,7 @@ class Login_Service:
         sample_collection_docs = {doc["key"]: doc for doc in db.sample.find({})}
         # Retrieve generic column visibility settings
         column_visibility_docs = {}
-        column_visibility_cursor = db['COLUMN_VISIBILITY'].find({})
+        column_visibility_cursor = db['MASTER_COLUMN_VISIBILITY'].find({})
         for column_visibility_doc in column_visibility_cursor:
             for collection_name, columns in column_visibility_doc.items():
                 if collection_name != "_id":

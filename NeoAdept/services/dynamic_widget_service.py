@@ -10,6 +10,7 @@ import pymongo
 from NeoAdept.gbo.bo import Base_Response, Pagination
 from NeoAdept.gbo.common import Custom_Error
 from NeoAdept.requests.dynamic_widget_request import create_dynamic_widget_request, delete_dynamic_widget_request, update_dynamic_widget_request
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.constants import CONSTANTS
 from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from NeoAdept.utilities.utility import Utility
@@ -27,8 +28,7 @@ class Dynamic_widget_Service:
     
     def __init__(self,logger,db,keyset_map,keyset_map_dt,session,sql_db):
         self.logger = logger
-        self.dynamic_widget_collection = "DYNAMIC_WIDGET"
-        self.key_nested_key_map = keyset_map
+        self.keyset_map = keyset_map
         self.keyset_map_dt = keyset_map_dt
         self.datatype_operations = {
                     'str': {'=': '$eq', '==': '$eq', '!=': '$ne', 'in': '$in', 'nin': '$nin', 'exists': '$exists', 'regex': '$regex'},
@@ -42,9 +42,8 @@ class Dynamic_widget_Service:
                     'array': {'exists': '$exists'},
                     'objectid': {'=': '$eq', '==': '$eq', '!=': '$ne', 'exists': '$exists'}
                 }
-        self.common_service = Common_Service(logger,db,keyset_map)
-        if "DYNAMIC_WIDGET" in keyset_map:
-            self.key_map = self.key_nested_key_map["DYNAMIC_WIDGET"]
+        #self.common_service = Common_Service(logger,db,keyset_map)
+        self.key_map = self.keyset_map[COLLECTIONS.MASTER_DYNAMIC_WIDGET ]
         self.session = session
         self.sql_db = sql_db
  
@@ -54,9 +53,9 @@ class Dynamic_widget_Service:
         
         pagination = Pagination(**request_data)
     
-        self.common_service.create_log_details(identity_data_obj.email,request_data,"get_dynamic_widget",db)
+        #self.common_service.create_log_details(identity_data_obj.email,request_data,"get_dynamic_widget",db)
         
-        dynamic_widget_collection = db[self.dynamic_widget_collection]
+        dynamic_widget_collection = db[COLLECTIONS.MASTER_DYNAMIC_WIDGET]
         
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         
@@ -93,7 +92,7 @@ class Dynamic_widget_Service:
         else:
             query = DB_Utility.update_keys_check(dynamic_widget_data_obj,list_of_keys,_id)
             
-        cursor = Mongo_DB_Manager.read_documents(db[self.dynamic_widget_collection],query)
+        cursor = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)
         existing_dynamic_widgets = list(cursor)
                  
         if _id not in [dynamic_widget['_id'] for dynamic_widget in existing_dynamic_widgets]:
@@ -119,11 +118,11 @@ class Dynamic_widget_Service:
         dynamic_widget_data_obj.updated_by = email_from_token
                 
         query =  {"_id": _id}  
-        result = Mongo_DB_Manager.update_document(db[self.dynamic_widget_collection], query, dynamic_widget_data_obj.__dict__)
+        result = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query, dynamic_widget_data_obj.__dict__)
         if result == 0:
             raise Custom_Error('Could not update dynamic widget')  
 
-        data = Mongo_DB_Manager.read_one_document(db[self.dynamic_widget_collection],query)
+        data = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)
         
         return DB_Utility.convert_obj_id_to_str_id(data)
             
@@ -144,18 +143,18 @@ class Dynamic_widget_Service:
             
         fields_to_check = ["name"]
         query = DB_Utility.fields_to_check(dynamic_widget_obj_details,fields_to_check)
-        existing_widget = Mongo_DB_Manager.read_one_document(db[self.dynamic_widget_collection], query)
+        existing_widget = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query)
         if existing_widget:
             field = next((field for field in fields_to_check if getattr(dynamic_widget_obj_details, field) == existing_widget[field]), None)
             if field:
                 raise Custom_Error(f"{field} already exists")
             
         dynamic_widget_obj_details = Utility.upsert_by_on(dynamic_widget_obj_details,"add",email_from_token)         
-        dynamic_widget_id = Mongo_DB_Manager.create_document(db[self.dynamic_widget_collection],dynamic_widget_obj_details.__dict__) 
+        dynamic_widget_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],dynamic_widget_obj_details.__dict__) 
         if not dynamic_widget_id:
             raise Custom_Error('Could not add dynamic_widget')
         
-        data = Mongo_DB_Manager.read_one_document(db[self.dynamic_widget_collection],query)       
+        data = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)       
         return DB_Utility.convert_obj_id_to_str_id(data)
         
         
@@ -221,7 +220,7 @@ class Dynamic_widget_Service:
                    
         dynamic_widget_data_obj = DYNAMIC_WIDGET(**dynamic_widget_data)
         
-        dynamic_widget_collection = db[self.dynamic_widget_collection]
+        dynamic_widget_collection = db[COLLECTIONS.MASTER_DYNAMIC_WIDGET]
         _id = dynamic_widget_data_obj._id
         query = {"_id": DB_Utility.str_to_obj_id(_id)}
                 
@@ -289,7 +288,7 @@ class Dynamic_widget_Service:
         identity_data_obj = ACCESS_TOKEN(**identity_data) 
         _id = DB_Utility.str_to_obj_id(id)
         query = {"_id": _id}
-        doc = Mongo_DB_Manager.read_one_document(db[self.dynamic_widget_collection], query)
+        doc = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query)
         if not doc:
             raise Custom_Error("No data found for _id")
         
@@ -314,7 +313,7 @@ class Dynamic_widget_Service:
         _id = DB_Utility.str_to_obj_id(id)
         query = {"_id": _id}
         
-        doc = Mongo_DB_Manager.read_one_document(db[self.dynamic_widget_collection], query)
+        doc = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query)
         if not doc:
             raise Custom_Error("No data found for _id")
         
@@ -333,7 +332,7 @@ class Dynamic_widget_Service:
         if not query_information.get('conditions') and not query_information.get('rules'):
             query = {}
         else:
-            generate_query = self.generate_mongodb_query1(query_information, self.keyset_map_dt[collection_name], self.key_nested_key_map[collection_name])
+            generate_query = self.generate_mongodb_query1(query_information, self.keyset_map_dt[collection_name], self.keyset_map[collection_name])
         
         #print("dynamic query",generate_query)
         # Determine projection based on identity_data_obj.widget_enable_for_db
@@ -381,8 +380,8 @@ class Dynamic_widget_Service:
             
         pagination = Pagination(**req)
         
-        if collection_name in self.key_nested_key_map:
-            key_map = self.key_nested_key_map[collection_name]
+        if collection_name in self.keyset_map:
+            key_map = self.keyset_map[collection_name]
             
         query = DB_Utility.frame_get_query(pagination,key_map)
         #print("framed query::",query)  
@@ -398,7 +397,7 @@ class Dynamic_widget_Service:
             combined_query = generate_query
         #print("combined_query:::",combined_query)
 
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[collection_name],combined_query,pagination,projection,self.key_nested_key_map[collection_name])
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[collection_name],combined_query,pagination,projection,self.keyset_map[collection_name])
                
         if docs and len(docs)>0:            
             return DB_Utility.convert_object_ids_to_strings(docs),count
@@ -420,7 +419,7 @@ class Dynamic_widget_Service:
         if not query_information.get('conditions') and not query_information.get('rules'):
             query = {}
         else:
-            generate_query = self.generate_mongodb_query1(query_information, self.keyset_map_dt[collection_name], self.key_nested_key_map[collection_name])
+            generate_query = self.generate_mongodb_query1(query_information, self.keyset_map_dt[collection_name], self.keyset_map[collection_name])
         
         # Determine projection based on identity_data_obj.widget_enable_for_db
         #widget_enable_for_db = identity_data_obj.widget_enable_for_db
@@ -471,8 +470,8 @@ class Dynamic_widget_Service:
         
         pagination = Pagination(**req)
         
-        if collection_name in self.key_nested_key_map:
-            key_map = self.key_nested_key_map[collection_name]
+        if collection_name in self.keyset_map:
+            key_map = self.keyset_map[collection_name]
             
         query = DB_Utility.frame_get_query(pagination,key_map)
        
@@ -486,7 +485,7 @@ class Dynamic_widget_Service:
         else:
             combined_query = generate_query
         
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[collection_name],combined_query,pagination,projection,self.key_nested_key_map[collection_name])
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[collection_name],combined_query,pagination,projection,self.keyset_map[collection_name])
         #print(docs,count)      
         if docs and len(docs)>0:            
             return DB_Utility.convert_object_ids_to_strings(docs),count
@@ -617,263 +616,3 @@ class Dynamic_widget_Service:
             return and_(*rule_list)
         elif operation == 'OR':
             return or_(*rule_list)
-        
-"""def generate_mongodb_query(self,rules,keyset_map_dt):
-        query = {}        
-        condition = rules.get('condition', 'and').lower()
-        query_operator = '$and' if condition == 'and' else '$or'
-        query[query_operator] = []
-        for rule in rules['rules']:
-            if 'condition' in rule:
-                sub_query = self.generate_mongodb_query(rule,keyset_map_dt)
-                if sub_query:
-                    sub_query_operator = None
-                    for op in ['$and', '$or']:
-                        if op in sub_query and sub_query[op]:
-                            sub_query_operator = op
-                            break
-                    if sub_query_operator:
-                        query[query_operator].append(sub_query)
-            else:
-                missing_fields = [key for key in ['field', 'operator', 'value'] if key not in rule]
-                if missing_fields:
-                    raise ValueError(f"Invalid query: Missing fields {missing_fields} in {rule}")
-                field = rule['field'] 
-                value = rule['value']
-                operator = rule['operator']
-                field_datatype = keyset_map_dt[field]
-                if field_datatype is not None:
-                    field_with_datatype = f"{field}: {field_datatype}"
-                    print("field_with_datatype_______________________________", field_with_datatype)
-                else:
-                    print(f"No datatype found for field '{field}' in the keyset.")
-
-                if field_datatype == 'str':
-                    print("Performing string related operations...")
-        # Example operations for string datatype
-                    if operator == '=':
-                        query[query_operator].append({field: value})
-                    elif operator == '==':
-                        query[query_operator].append({field: {'$eq': value}})
-                    elif operator == '!=':
-                        query[query_operator].append({field: {'$ne': value}})
-                    elif operator == 'in':
-                        query[query_operator].append({field: {'$in': value}})
-                    elif operator == 'nin':
-                        query[query_operator].append({field: {'$nin': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    elif operator == 'regex':
-                        query[query_operator].append({field: {'$regex': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for string datatype.")
-                
-                elif field_datatype == 'int' or field_datatype == 'float':
-                    # Integer related operations
-                    if operator == '=':
-                        query[query_operator].append({field: value})
-                    elif operator == '==':
-                        query[query_operator].append({field: {'$eq': value}})
-                    elif operator == '!=':
-                        query[query_operator].append({field: {'$ne': value}})
-                    elif operator == '>':
-                        query[query_operator].append({field: {'$gt': value}})
-                    elif operator == '<':
-                        query[query_operator].append({field: {'$lt': value}})
-                    elif operator == '>=':
-                        query[query_operator].append({field: {'$gte': value}})
-                    elif operator == '<=':
-                        query[query_operator].append({field: {'$lte': value}})
-                    elif operator == 'in':
-                        query[query_operator].append({field: {'$in': value}})
-                    elif operator == 'nin':
-                        query[query_operator].append({field: {'$nin': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for integer datatype.")
-               
-                elif field_datatype == 'bool':
-                    print("Performing boolean related operations...")
-        # Example operations for bool datatype
-                    if operator == '=':
-                        query[query_operator].append({field: value})
-                    elif operator == '==':
-                        query[query_operator].append({field: {'$eq': value}})
-                    elif operator == '!=':
-                        query[query_operator].append({field: {'$ne': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for boolean datatype.")
-                    # Boolean related operations
-                    print("Performing boolean related operations...")
-                elif field_datatype == 'date' or field_datatype == 'datetime':
-                    if operator == '=':
-                        query[query_operator].append({field: value})
-                    elif operator == '==':
-                        query[query_operator].append({field: {'$eq': value}})
-                    elif operator == '!=':
-                        query[query_operator].append({field: {'$ne': value}})
-                    elif operator == '>':
-                        query[query_operator].append({field: {'$gt': value}})
-                    elif operator == '<':
-                        query[query_operator].append({field: {'$lt': value}})
-                    elif operator == '>=':
-                        query[query_operator].append({field: {'$gte': value}})
-                    elif operator == '<=':
-                        query[query_operator].append({field: {'$lte': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for date datatype.")
-                elif field_datatype == 'list':
-                    # Example operations for list datatype
-                    if operator == 'in':
-                        query[query_operator].append({field: {'$in': value}})
-                    elif operator == 'nin':
-                        query[query_operator].append({field: {'$nin': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for list datatype.")
-                elif field_datatype == 'dict' or field_datatype == 'array':
-                    if operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for dictionary datatype or array.")
-                elif field_datatype == 'objectid':
-                    if operator == '=':
-                        query[query_operator].append({field: value})
-                    elif operator == '==':
-                        query[query_operator].append({field: {'$eq': value}})
-                    elif operator == '!=':
-                        query[query_operator].append({field: {'$ne': value}})
-                    elif operator == 'exists':
-                        query[query_operator].append({field: {'$exists': value}})
-                    else:
-                        print(f"Operator '{operator}' not supported for ObjectId datatype.")
-                else:
-                    print(f"No datatype found for field '{field}' in the keyset.")
-                    
-        return query  """
-
-
-"""main_collection = query_information.get("main_collection")
-        rules = query_information.get("rules", [])
-
-        queries = []
-
-        for rule in rules:
-            if "field" in rule:
-                field = rule.get("field")
-                operator = rule.get("operator")
-                value = rule.get("value")
-
-                if field and operator and value:
-                    match_query = {field: {f"${operator}": value}}
-                    queries.append({"collection": main_collection, "match": match_query})
-
-            elif "lookup_collection" in rule:
-                lookup_collection = rule.get("lookup_collection")
-                nested_rules = rule.get("rules", [])
-                nested_queries = []
-
-                for nested_rule in nested_rules:
-                    print("nested_rule", nested_rule)
-                    if 'condition' in nested_rule and 'rules' in nested_rule:
-                        # Handle condition and rules
-                        condition = nested_rule['condition']
-                        sub_rules = nested_rule['rules']
-
-                        # Generate MongoDB query for sub-rules recursively
-                        sub_queries = self.generate_nested_queries(sub_rules, lookup_collection)
-                        
-                        # Check if there are any sub-queries generated
-                        if sub_queries:
-                # Apply the condition to the sub-queries
-                            if condition == 'and':
-                                nested_queries.extend(sub_queries)
-                            elif condition == 'or':
-                                nested_queries.append({"$or": sub_queries})
-                    elif nested_rule.get("field") and nested_rule.get("operator") and nested_rule.get("value"):
-            # Handle individual nested rule
-                        nested_match_query = {nested_rule["field"]: {f"${nested_rule['operator']}": nested_rule["value"]}}
-                        nested_queries.append({"collection": lookup_collection, "match": nested_match_query})
-
-                # Append the nested queries if there are any
-                if nested_queries:
-                    queries.append({"nested_queries": nested_queries})
-            elif "condition" in rule:
-                condition = rule.get("condition")
-                sub_rules = rule.get("rules", [])
-
-                sub_queries = self.generate_mongodb_query({"main_collection": main_collection, "rules": sub_rules})
-
-                if condition == "or":
-                    queries.append({"$or": sub_queries})
-                elif condition == "and":
-                    queries.append({"$and": sub_queries})
-
-        return queries
-    
-    def generate_nested_queries(self, rules, lookup_collection):
-        nested_queries = []
-        for nested_rule in rules:
-            if 'condition' in nested_rule and 'rules' in nested_rule:
-                # Handle condition and rules
-                condition = nested_rule['condition']
-                sub_rules = nested_rule['rules']
-
-                # Generate MongoDB query for sub-rules recursively
-                sub_queries = self.generate_nested_queries(sub_rules, lookup_collection)
-                
-                # Check if there are any sub-queries generated
-                if sub_queries:
-                    # Apply the condition to the sub-queries
-                    if condition == 'and':
-                        nested_queries.extend(sub_queries)
-                    elif condition == 'or':
-                        nested_queries.append({"$or": sub_queries})
-            elif nested_rule.get("field") and nested_rule.get("operator") and nested_rule.get("value"):
-                # Handle individual nested rule
-                nested_match_query = {
-                    nested_rule["field"]: {f"${nested_rule['operator']}": nested_rule["value"]}
-                }
-                nested_queries.append({"collection": lookup_collection, "match": nested_match_query})
-
-        return nested_queries"""
-
-
-
-            
-"""def generate_mongodb_query(self,json_structure):
-
-        pipeline = []
-
-        # Recursively build pipeline stages
-        for rule in json_structure["rules"]:
-            if "collection" in rule:
-                # Handle nested rules
-                if "rules" in rule:
-                    nested_pipeline = self.generate_mongodb_query(rule)
-                    if rule["condition"] == "and":
-                        pipeline.extend(nested_pipeline)
-                    elif rule["condition"] == "or":
-                        pipeline.append({"$or": nested_pipeline})
-                else:
-                    if "collection" in json_structure:
-                        collection = json_structure["collection"]
-                        # Construct match stage
-                        match_stage = {"$match": {rule["field"]: {f"${rule['operator']}": rule['value']}}}
-                        pipeline.append(match_stage)
-                    else:
-                        raise ValueError("Collection not specified in rule")
-            else:
-                raise ValueError("Collection not specified in rule")
-
-        return pipeline"""
-
-
-        
-    

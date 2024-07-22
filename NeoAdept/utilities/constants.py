@@ -226,3 +226,4 @@ class CONSTANTS:
     SUB_MENU_KTR =['page_id']
     PAGE_KTR = ['widget_ids']
     SQL="SQL"
+    FILTERS="filters"

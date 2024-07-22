@@ -7,6 +7,7 @@ from uuid import uuid4
 from dateutil.parser import parse as parse_date
 from werkzeug.utils import secure_filename
 
+from ..utilities.collection_names import COLLECTIONS
 from ..pojo.activity_details import ACTIVITY_DETAILS
 from ..pojo.directory import DIRECTORY
 from ..pojo.module_details import ACCESS_DETAILS, MODULE_DETAILS
@@ -34,83 +35,34 @@ class Common_Service:
         if not hasattr(self, 'initialized'):
             self.logger = logger
             self.db = db
-            self.attachment_details = "ATTACHMENT_DETAILS"
             self.directory = DIRECTORY()
-            self.log_details = "LOG_DETAILS"
-            self.search_details = "SEARCH_DETAILS"
-            self.search_details_view = "SEARCH_DETAILS_VIEW"
-            self.activity_details_collection = "ACTIVITY_DETAILS"
-            self.role_collection = "ROLE"
-            self.role_permission_collection = "ROLE_PERMISSION"
-            self.user_permission_collection = "USER_PERMISSION"
-            self.key_nested_key_map = keyset_map
+            self.keyset_map = keyset_map
             self.projection = {"JOB_DETAILS":None,"CONTACT_DETAILS_VIEW": {"company_name":1,"contact_id":1,"email":1,"name":1,"phone":1,"comments":1},"CANDIDATE_DETAILS":None,"COMPANY_DETAILS": {"company_name":1,"_id":1}}
             self.recent_search_id_map = {"CONTACT_DETAILS_VIEW": "contact_id"}
-            if "LOG_DETAILS" in keyset_map:
-                self.key_map = self.key_nested_key_map["LOG_DETAILS"]
-            contact_details_view_pipeline = [
-                                                {"$unwind": "$contact_list"},
-                                                {
-                                                    "$project": {
-                                                        "_id": "$_id",
-                                                        "company_name": "$company_name",
-                                                        "comments": "$contact_list.comments",
-                                                        "contact_id": "$contact_list.contact_id",
-                                                        "email": "$contact_list.email",
-                                                        "name": "$contact_list.name",
-                                                        "phone": "$contact_list.phone"
-                                                    }
-                                                }
-                                            ]               
-            recent_search_pipeline = [
-                                        {
-                                            "$group": {
-                                            "_id": {
-                                                "user": "$user",
-                                                "module": "$module"
-                                            },
-                                            "search_id": { "$push": "$search_id" }
-                                            }
-                                        },
-                                        {
-                                            "$project": {
-                                            "_id": 0,
-                                            "user": "$_id.user",
-                                            "module": "$_id.module",
-                                            "search_id": 1
-                                            }
-                                        }
-                                    ]
-            #Collection_Manager.create_view(db,"COMPANY_DETAILS","CONTACT_DETAILS_VIEW",contact_details_view_pipeline)
-            #Collection_Manager.create_view(db,"SEARCH_DETAILS","SEARCH_DETAILS_VIEW",recent_search_pipeline)
-                    
-            self.module_details_collection = "MODULE_DETAILS"
-            if "MODULE_DETAILS" in keyset_map:
-                self.key_module_map = self.key_nested_key_map["MODULE_DETAILS"]
+            self.key_module_map = self.keyset_map[COLLECTIONS.MASTER_MODULE_DETAILS]
+            self.attachment_folder = self.directory.create_folder('attachment')
     
     def upload_attachments(self,request,db):
-        
         module_type = request.form.get('type')
         if not module_type:
             raise Custom_Error("Type is missing in the request JSON")
-        
-        attachment_folder = self.directory.create_folder('attachment')
-        module_folder = self.directory.create_folder(module_type,parent_folder=attachment_folder)
+    
+        module_folder = self.directory.create_folder(module_type,parent_folder=self.attachment_folder)
         
         attachment_list = []
-        
         for file in request.files.getlist('file'):
-            if file.filename == '':
+            if not file.filename:
                 continue  
-            
+                
             original_filename = secure_filename(file.filename)
             file_id = str(uuid4())
             file_extension = original_filename.rsplit('.', 1)[1] if '.' in original_filename else ''
             new_filename = f"{file_id}.{file_extension}"
             file_path = self.directory.get_folder(new_filename,parent_folder=module_folder)
-            file_type=Utility.get_file_type(new_filename)
+            file_type = Utility.get_file_type(new_filename)
+            
             file.save(file_path)
-        
+
             attachment_data = {
                                 "file_id": file_id,
                                 "file_name": original_filename,
@@ -118,22 +70,18 @@ class Common_Service:
                                 "file_type": file_type,
                                 "module_type": module_type
                             }
-            
             attachment_list.append(attachment_data)
-            
-        if len(attachment_list) > 0:
-            inserted_ids = Mongo_DB_Manager.create_documents(db[self.attachment_details],attachment_list)
-            
-            if inserted_ids is None:
-                raise Custom_Error('Could not add attachment info to collection')
-            
+        
         if not attachment_list:
             raise Custom_Error(CONSTANTS.CRDTS_ERR)
-        attachments = DB_Utility.convert_object_ids_to_strings(attachment_list)
-        return attachments
+        
+        inserted_ids = Mongo_DB_Manager.create_documents(db[COLLECTIONS.MASTER_ATTACHMENT_DETAILS],attachment_list)
+        if inserted_ids is None:
+            raise Custom_Error('Could not add attachment info to collection')
+        
+        return DB_Utility.convert_object_ids_to_strings(attachment_list)
         
     def get_doc(self,module_type,filename):
-        
         attachment_folder = self.directory.get_folder('attachment')
         module_folder = self.directory.get_folder(module_type,parent_folder=attachment_folder) 
         file_path = self.directory.get_folder(filename,parent_folder = module_folder) 
@@ -141,23 +89,14 @@ class Common_Service:
         if not os.path.exists(file_path):
             raise Custom_Error("File not found")
 
-        mime_type, _ = mimetypes.guess_type(file_path)
-        if mime_type is None:
-            mime_type = 'application/octet-stream'
+        mime_type, _ = mimetypes.guess_type(file_path) or ('application/octet-stream', None)
+        disposition = 'inline' if mime_type.startswith('image/') else 'attachment'
             
-        if mime_type.startswith('image/'):
-            disposition = 'inline'
-        else:
-            disposition = 'attachment'
-            
-        # Serve the file inline
         response = make_response(send_file(file_path, mimetype=mime_type))
         response.headers['Content-Disposition'] = f'{disposition}; filename="{filename}"'
-
         return response       
     
     def create_log_details(self,email_from_token,request_info,api_name,db):
-        
         log_data = {
             "request_info": request_info,
             "user": email_from_token,
@@ -166,74 +105,57 @@ class Common_Service:
         }
         log_data_obj = LOG_DETAILS(**log_data) 
         del log_data_obj._id
-        log_id = Mongo_DB_Manager.create_document(db[self.log_details],log_data_obj.__dict__)
+        Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_LOG_DETAILS],log_data_obj.__dict__)
         return True
     
     def get_log_details(self,identity_data,request_data,db):
-        
-        identity_data_obj = ACCESS_TOKEN(**identity_data)
-        role_from_token = identity_data_obj.role
-        
-        '''if role_from_token not in [CONSTANTS.ADMIN, CONSTANTS.PRODUCT_ADMIN, CONSTANTS.PRODUCT_USER]:
-            raise Custom_Error('Cannot view log details')'''
-        
         pagination = Pagination(**request_data) 
-        
-        self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
+        #self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
         query = DB_Utility.frame_get_query(pagination,self.key_map)
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.log_details],query,pagination) 
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_LOG_DETAILS],query,pagination) 
 
-        if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(db[self.log_details],query)
-            if pagination.is_download==True:
-                return docs,count
-            return DB_Utility.convert_doc_to_cls_obj(docs,LOG_DETAILS),count
-        
-        raise Custom_Error(CONSTANTS.NO_DATA_FOUND) 
+        if not docs:
+            raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
+
+        if pagination.is_download:
+            return docs, count
+        return DB_Utility.convert_doc_to_cls_obj(docs, LOG_DETAILS), count
     
     def add_module_details(self,module_info,db): 
-       
         if not module_info:
             raise Custom_Error('No module info provided')
         
         access_details = [ACCESS_DETAILS(**ad).to_dict() for ad in module_info.get('access', [])]
         module = module_info.get('module')
+        current_time = Utility.get_current_time()
+        
         module_details_obj = MODULE_DETAILS(
             module=module,
             access=access_details,
             created_by="admin",
-            created_on=Utility.get_current_time()
+            created_on=current_time
         )
-
 
         attributes_to_delete = ["updated_by","updated_on","_id"]
         module_details_obj = DB_Utility.delete_attributes_from_obj(module_details_obj,attributes_to_delete)
-        module_id = Mongo_DB_Manager.create_document(db[self.module_details_collection],module_details_obj.__dict__)
+        
+        module_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_MODULE_DETAILS],module_details_obj.__dict__)
         if not module_id:
             raise Custom_Error('Could not module info')
-        
-        # Retrieve all users from the user_details_collection
-        query = {'is_deleted': False}
-        roles = Mongo_DB_Manager.read_documents(db[self.role_collection],query)
+
+        roles = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_ROLE],{'is_deleted': False})
         for role in roles:
             role_id = DB_Utility.obj_id_to_str(role['_id'])
             role_name = role['name']
         
-            # Fetch the corresponding role_permission document
-            query = {'role_id': role_id}
-            role_permission = Mongo_DB_Manager.read_one_document(db[self.role_permission_collection],query)
+            role_permission = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION],{'role_id': role_id})
             
             module_permissions = {ad['submodule_name']: False for ad in module_info.get('access', [])}
             
             if role_permission:
-                # Update existing role_permission document
                 role_permission['permissions'][module] = module_permissions         
-                query = {'_id': role_permission['_id']}
-                update = {'permissions': role_permission['permissions']}
-                Mongo_DB_Manager.update_document(db[self.role_permission_collection],query,update)
-                
+                Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION],{'_id': role_permission['_id']},{'permissions': role_permission['permissions']})
             else:
-                # Create a new role_permission document if it doesn't exist
                 new_role_permission = {
                                         'role_id': role_id,
                                         'role_name': role_name,
@@ -241,18 +163,18 @@ class Common_Service:
                                             module: module_permissions
                                         },
                                         'created_by': "admin",
-                                        'created_on': Utility.get_current_time()
+                                        'created_on': current_time
                                     }
-                Mongo_DB_Manager.create_document(db[self.role_permission_collection],new_role_permission)
+                Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION],new_role_permission)
                 
         query = {'is_deleted': False}
-        users = Mongo_DB_Manager.read_documents(db['USER_DETAILS'],query)
+        users = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_USER_DETAILS],query)
         for user in users:
             user_id = DB_Utility.obj_id_to_str(user['_id'])           
             user_permissions = {ad['submodule_name']: "default" for ad in module_info.get('access', [])}
             query = {'_id':user['_id']}
             update = {f'permissions.{module}': user_permissions}
-            Mongo_DB_Manager.update_document(db['USER_DETAILS'],query,update)
+            Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_USER_DETAILS],query,update)
             
         
     def get_module_details(self,identity_data,request_data,db):
@@ -264,10 +186,10 @@ class Common_Service:
                     
         query = DB_Utility.frame_get_query(pagination,self.key_module_map)
         
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.module_details_collection],query,pagination) 
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_MODULE_DETAILS],query,pagination) 
 
         if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(db[self.module_details_collection],query)
+            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_MODULE_DETAILS],query)
             if pagination.is_download==True:
                 return docs,count
             return DB_Utility.convert_doc_to_cls_obj(docs,MODULE_DETAILS),count
@@ -282,8 +204,8 @@ class Common_Service:
         #print(f"Available globals: {list(globals().keys())}")
         for mod_col in module_collection:
             count,doc_objs = 0,[]
-            if mod_col in self.key_nested_key_map:
-                key_map = self.key_nested_key_map[mod_col]
+            if mod_col in self.keyset_map:
+                key_map = self.keyset_map[mod_col]
                 query = DB_Utility.frame_get_query(global_search_req_obj,key_map)
                 docs,count = Mongo_DB_Manager.get_paginated_data1(db[mod_col],query,global_search_req_obj,self.projection[mod_col],key_map)
                 if docs and len(docs)>0:
@@ -300,19 +222,19 @@ class Common_Service:
         search_details_obj.search_time = Utility.get_current_time()
         del search_details_obj._id
         check_limitation_query = {"user":search_details_obj.user,"module":search_details_obj.module }
-        user_mod_count = Mongo_DB_Manager.count_documents(db[self.search_details],check_limitation_query)
+        user_mod_count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_SEARCH_DETAILS],check_limitation_query)
         if user_mod_count >= 20:
-            oldest_docs = Mongo_DB_Manager.get_last_n_docs_from_collection(db[self.search_details],check_limitation_query,19)
+            oldest_docs = Mongo_DB_Manager.get_last_n_docs_from_collection(db[COLLECTIONS.ATS_SEARCH_DETAILS],check_limitation_query,19)
             ids_to_delete = [doc['_id'] for doc in oldest_docs]
-            Mongo_DB_Manager.delete_documents(db[self.search_details],ids_to_delete)
+            Mongo_DB_Manager.delete_documents(db[COLLECTIONS.ATS_SEARCH_DETAILS],ids_to_delete)
         check_limitation_query.update({"search_id":search_details_obj.search_id}) 
-        doc = Mongo_DB_Manager.read_one_document(db[self.search_details],check_limitation_query)
+        doc = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_SEARCH_DETAILS],check_limitation_query)
         if doc is None:
-            inserted_id = Mongo_DB_Manager.create_document(db[self.search_details],search_details_obj.__dict__)
+            inserted_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.ATS_SEARCH_DETAILS],search_details_obj.__dict__)
         
     def recent_search_details(self,identity_data,request_data,db):
         identity_data_obj = ACCESS_TOKEN(**identity_data)        
-        docs = list(Mongo_DB_Manager.read_documents(db[self.search_details_view],{"user":identity_data_obj.email}))
+        docs = list(Mongo_DB_Manager.read_documents(db[COLLECTIONS.SEARCH_DETAILS_VIEW],{"user":identity_data_obj.email}))
         result_dict = {}
         for doc in docs:
             module = doc['module']
@@ -340,11 +262,11 @@ class Common_Service:
         
         activity_data_obj = ACTIVITY_DETAILS(**data) 
         DB_Utility.remove_extra_attributes(activity_data_obj.__dict__,data)
-        activity_id = Mongo_DB_Manager.create_document(db[self.activity_details_collection],activity_data_obj.__dict__)
+        activity_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_ACTIVITY_DETAILS],activity_data_obj.__dict__)
         return True
         
     def add_role_permission_for_role(self, role_id, role_name, email,db):
-        module_info = Mongo_DB_Manager.read_documents(db['MODULE_DETAILS'], {})
+        module_info = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_MODULE_DETAILS], {})
         permissions = {}
     
         for module in module_info:
@@ -368,7 +290,7 @@ class Common_Service:
             'updated_on': Utility.get_current_time()
         }
 
-        Mongo_DB_Manager.create_document(db['ROLE_PERMISSION'], new_role_permission)  
+        Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION], new_role_permission)  
         
     def get_submodule_structure(self, submodules, default_value):
         submodule_permissions = {}
@@ -388,7 +310,7 @@ class Common_Service:
         return submodule_permissions
                 
     def add_user_permission_for_user(self, user_id, email,db):
-        module_info = Mongo_DB_Manager.read_documents(db['MODULE_DETAILS'], {})
+        module_info = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_MODULE_DETAILS], {})
         permissions = {}
         for module in module_info:
             permissions[module['module']] = self.get_submodule_structure(module['access'], "default")
@@ -396,7 +318,7 @@ class Common_Service:
         query = {'_id': DB_Utility.str_to_obj_id(user_id)}
         update_query = {'permissions': permissions, 'updated_by': email, 'created_on': Utility.get_current_time()}
     
-        modified_count = Mongo_DB_Manager.update_document(db['USER_DETAILS'],query,update_query)
+        modified_count = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_USER_DETAILS],query,update_query)
         
     def get_document(self,folder,filename):
         
@@ -441,7 +363,7 @@ class Common_Service:
         column_visibility_data = request_data[dynamic_key]    
 
         # Find existing document in USER_COULMN_VISIBILITY collection
-        column_document = db["USER_DETAILS"].find_one({'_id': DB_Utility.str_to_obj_id(request_data["user_id"])})
+        column_document = db[COLLECTIONS.MASTER_USER_DETAILS].find_one({'_id': DB_Utility.str_to_obj_id(request_data["user_id"])})
         visibility = column_document.get("visibility", {}) if column_document else {}
         
         if not column_document or "visibility" not in column_document:
@@ -459,7 +381,7 @@ class Common_Service:
                     visibility_path: column_visibility_data
                 }
             }
-            db["USER_DETAILS"].update_one(
+            db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].update_one(
                 {'_id': DB_Utility.str_to_obj_id(user_id)},
                 update_operation, upsert=True
             )
@@ -469,14 +391,14 @@ class Common_Service:
                     "_id": ObjectId(user_id),visibility_path: 1
                 }
 
-            visibility_path_exists = db["USER_DETAILS"].find_one(
+            visibility_path_exists = db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].find_one(
             filter_criteria,
             projection={ visibility_path: 1}
         )
             #print("visibility_path_exists-----------------",visibility_path_exists,visibility_path)
             if not visibility_path_exists:
             # Initialize visibility if it doesn't exist
-                db["USER_DETAILS"].update_one(
+                db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].update_one(
                     {"_id": ObjectId(user_id)},
                     {"$set": { visibility_path: []}}
                 )
@@ -486,7 +408,7 @@ class Common_Service:
                 enable = detail.get("enable")
 
                 # Check if db_column exists in the array
-                db_column_exists = db["USER_DETAILS"].count_documents({
+                db_column_exists = db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].count_documents({
                     "_id": ObjectId(user_id),
                     f"{visibility_path}.db_column": db_column
                 })
@@ -509,26 +431,17 @@ class Common_Service:
                     array_filters = None
 
                 # Execute the update operation
-                result = db["USER_DETAILS"].update_one(
+                result = db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].update_one(
                     {"_id": ObjectId(user_id)},
                     update_operation,
                     array_filters=array_filters
                 )
 
     def get_user_id(self, db, email):       
-        document = db["USER_DETAILS"].find_one({'email': email})
+        document = db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS].find_one({'email': email})
         if not document:
             raise Custom_Error(f"No user found with email: {email}")
         return DB_Utility.obj_id_to_str(document["_id"])
-
-    def get_column_details(self,identity_data,request_data,db):      
-    
-        data = list(db["COLUMN_PERMISSION"].find())
-        print("data :",data)
-        data = DB_Utility.convert_obj_id_to_str_id(data)
-        print("data::",data) 
-        data[0].pop("_id")
-        return data 
     
     def enable_user_widget(self,identity_data, request_data,db):
         user_id = request_data.get('user_id')
@@ -536,7 +449,7 @@ class Common_Service:
         if not user_id or not collections_data:
             raise Custom_Error("user_id and collections data are required")
         query = {'_id':DB_Utility.str_to_obj_id(user_id)}
-        user = Mongo_DB_Manager.read_one_document(db["USER_DETAILS"],query)
+        user = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS],query)
         if not user:
             raise Custom_Error("User not found")
         
@@ -586,7 +499,7 @@ class Common_Service:
         
         # Update the user document
         update_query = {"visibility": user['visibility']}
-        updated_count = Mongo_DB_Manager.update_document(db["USER_DETAILS"],query,update_query)
+        updated_count = Mongo_DB_Manager.update_document(db[COLLECTIONS.COLLECTIONS.MASTER_USER_DETAILS],query,update_query)
 
         if updated_count == 0:
             raise Custom_Error('Could not update user-based widget visibility')
@@ -709,14 +622,14 @@ class Common_Service:
 
     # Run the aggregation pipeline
         print("pipeline ",pipeline)    
-        history_entries = list(db["HISTORY"].aggregate(pipeline))
+        history_entries = list(db[COLLECTIONS.ATS_HISTORY].aggregate(pipeline))
         
         if not history_entries:
             raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
         return DB_Utility.convert_object_ids_to_strings(history_entries)
         
     def get_db_details(self,identity_data,request_data,db):      
-        data,count = Mongo_DB_Manager.get_paginated_data1(db["db_details"],{},projection={"_id":1,"db_name":1,"db_type":1},sample_doc=self.key_nested_key_map["db_details"])
+        data,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.CONFIG_DB_DETAILS],{},projection={"_id":1,"db_name":1,"db_type":1},sample_doc=self.keyset_map["db_details"])
         if data:
             return DB_Utility.convert_object_ids_to_strings(list(data)),count 
         raise Custom_Error("No Data Found")

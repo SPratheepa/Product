@@ -1,5 +1,6 @@
 import copy
 from NeoAdept.services.common_service import Common_Service
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.constants import CONSTANTS
 from flask import json
 from bson import ObjectId
@@ -31,25 +32,20 @@ class UI_Template_Service():
     def __init__(self,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
             self.key_nested_key_map = keyset_map         
-            self.role_key_map = keyset_map.get("ROLE", {})
-            self.menu_key_map = keyset_map.get("MENU", {})
-            self.sub_menu_key_map = keyset_map.get("SUB_MENU", {})
-            self.widget_key_map = keyset_map.get("WIDGET", {})
-            self.page_key_map = keyset_map.get("PAGE", {})
+            self.role_key_map = keyset_map.get(COLLECTIONS.MASTER_ROLE, {})
+            self.menu_key_map = keyset_map.get(COLLECTIONS.MASTER_MENU, {})
+            self.sub_menu_key_map = keyset_map.get(COLLECTIONS.MASTER_SUB_MENU, {})
+            self.widget_key_map = keyset_map.get(COLLECTIONS.MASTER_WIDGET, {})
+            self.page_key_map = keyset_map.get(COLLECTIONS.MASTER_PAGE, {})
             self.logger = logger            
-            self.widget_collection = "WIDGET"       
-            self.page_collection = "PAGE"
-            self.sub_menu_collection = "SUB_MENU"
-            self.menu_collection = "MENU"
-            self.role_collection = "ROLE"
-            self.common_service = Common_Service(logger,db,keyset_map)
+            #self.common_service = Common_Service(logger,db,keyset_map)
             self.collections_dict = {         
-                                        "role":db[self.role_collection],
-                                        "widget":db[self.widget_collection],
-                                        "page":db[self.page_collection],
-                                        "menu":db[self.menu_collection],
-                                        "sub_menu":db[self.sub_menu_collection]
-}
+                                        "role":db[COLLECTIONS.MASTER_ROLE],
+                                        "widget":db[COLLECTIONS.MASTER_WIDGET],
+                                        "page":db[COLLECTIONS.MASTER_PAGE],
+                                        "menu":db[COLLECTIONS.MASTER_MENU],
+                                        "sub_menu":db[COLLECTIONS.MASTER_SUB_MENU]
+            }
     
     def upsert_widget(self,widget_data,email_from_token,db):              
         widget_request = create_widget_request(widget_data) 
@@ -60,20 +56,20 @@ class UI_Template_Service():
         _id = widgetObj._id
        
         if _id: 
-                status = self.check_duplicates(db[self.widget_collection],widgetObj,"file_name",_id)
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_WIDGET],widgetObj,"file_name",_id)
                 if status is not None : 
                      raise Custom_Error(status)
                 update_query = {'_id': DB_Utility.str_to_obj_id(_id)}                 
                 cloned_widget_data = copy.deepcopy(widgetObj)
                 cloned_widget_data = self.upsert_by_on(cloned_widget_data,"update",email_from_token)    
                 
-                Mongo_DB_Manager.update_document(db[self.widget_collection],update_query,cloned_widget_data.__dict__)           
+                Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_WIDGET],update_query,cloned_widget_data.__dict__)           
         else:
-                status = self.check_duplicates(db[self.widget_collection],widgetObj,"file_name")
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_WIDGET],widgetObj,"file_name")
                 if status is not None : 
                      raise Custom_Error(status)
                 widgetObj = self.upsert_by_on(widgetObj,"add",email_from_token)                 
-                Mongo_DB_Manager.create_document(db[self.widget_collection],widgetObj.__dict__)              
+                Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_WIDGET],widgetObj.__dict__)              
 
     def upsert_page(self,page_data,email_from_token,db):
         page_request = create_page_request(page_data)           
@@ -84,25 +80,25 @@ class UI_Template_Service():
         _id = pageObj._id
            
         widget_ids = pageObj.widget_ids           
-        status = self.ids_exists(widget_ids,db[self.widget_collection],value = "widget")
+        status = self.ids_exists(widget_ids,db[COLLECTIONS.MASTER_WIDGET],value = "widget")
         if status is not None : 
                      raise Custom_Error(status)
             
         if _id:            
-            status = self.check_duplicates(db[self.page_collection],pageObj,"router_link",_id)
+            status = self.check_duplicates(db[COLLECTIONS.MASTER_PAGE],pageObj,"router_link",_id)
             if status is not None : 
                      raise Custom_Error(status)
             update_query = {'_id': DB_Utility.str_to_obj_id(_id)}                 
             cloned_page_data = copy.deepcopy(pageObj)
             cloned_page_data = self.upsert_by_on(cloned_page_data,"update",email_from_token)                
-            Mongo_DB_Manager.update_document(db[self.page_collection],update_query,cloned_page_data.__dict__)                 
+            Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_PAGE],update_query,cloned_page_data.__dict__)                 
         else:
             
-            status = self.check_duplicates(db[self.page_collection],pageObj,"router_link")
+            status = self.check_duplicates(db[COLLECTIONS.MASTER_PAGE],pageObj,"router_link")
             if status is not None : 
                      raise Custom_Error(status)
             pageObj = self.upsert_by_on(pageObj,"add",email_from_token)                 
-            Mongo_DB_Manager.create_document(db[self.page_collection],pageObj.__dict__)                  
+            Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_PAGE],pageObj.__dict__)                  
     
     def upsert_sub_menu(self,sub_menu_data,email_from_token,db):                    
             sub_menu_request = create_sub_menu_request(sub_menu_data) 
@@ -113,25 +109,25 @@ class UI_Template_Service():
             _id = sub_menuObj._id
            
             page_id = sub_menuObj.page_id           
-            doc = DB_Utility.check_id_exists([page_id],db[self.page_collection])               
+            doc = DB_Utility.check_id_exists([page_id],db[COLLECTIONS.MASTER_PAGE])               
             if not doc or list(doc)==[]:
                 raise Custom_Error(f"The page id {page_id} does not exists")     
             
             if _id:
-                status = self.check_duplicates(db[self.sub_menu_collection],sub_menuObj,"name",_id)
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_SUB_MENU],sub_menuObj,"name",_id)
                 if status is not None : 
                      raise Custom_Error(status)
                 update_query = {'_id': DB_Utility.str_to_obj_id(_id)}                 
                 cloned_sub_menu_data = copy.deepcopy(sub_menuObj)
                 cloned_sub_menu_data = self.upsert_by_on(cloned_sub_menu_data,"update",email_from_token)
                 
-                Mongo_DB_Manager.update_document(db[self.sub_menu_collection],update_query,cloned_sub_menu_data.__dict__)                
+                Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_SUB_MENU],update_query,cloned_sub_menu_data.__dict__)                
             else:               
-                status = self.check_duplicates(db[self.sub_menu_collection],sub_menuObj,"name")
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_SUB_MENU],sub_menuObj,"name")
                 if status is not None : 
                      raise Custom_Error(status)
                 sub_menuObj = self.upsert_by_on(sub_menuObj,"add",email_from_token)                              
-                Mongo_DB_Manager.create_document(db[self.sub_menu_collection],sub_menuObj.__dict__)                  
+                Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_SUB_MENU],sub_menuObj.__dict__)                  
                     
     
     def upsert_menu(self,menu_data,email_from_token,db):                    
@@ -145,31 +141,31 @@ class UI_Template_Service():
            is_sub_menu = menuObj.is_sub_menu
            if is_sub_menu:
                 sub_menu_ids = menuObj.sub_menu_ids
-                status = self.ids_exists(sub_menu_ids,db[self.sub_menu_collection],value = "sub_menu")
+                status = self.ids_exists(sub_menu_ids,db[COLLECTIONS.MASTER_SUB_MENU],value = "sub_menu")
                 if status is not None : 
                      raise Custom_Error(status)
                 del menuObj.page_id               
            else:
                page_id = menuObj.page_id           
-               doc = DB_Utility.check_id_exists([page_id],db[self.page_collection])               
+               doc = DB_Utility.check_id_exists([page_id],db[COLLECTIONS.MASTER_PAGE])               
                if not doc or list(doc)==[]:
                      raise Custom_Error(f"The page id {page_id} does not exists")  
                del menuObj.sub_menu_ids
            
            if _id:
-                status = self.check_duplicates(db[self.menu_collection],menuObj,"name",_id)
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_MENU],menuObj,"name",_id)
                 if status is not None : 
                      raise Custom_Error(status)
                 update_query = {'_id': DB_Utility.str_to_obj_id(_id)}                 
                 cloned_menu_data = copy.deepcopy(menuObj)
                 cloned_menu_data = self.upsert_by_on(cloned_menu_data,"update",email_from_token)
-                Mongo_DB_Manager.update_document(db[self.menu_collection],update_query,cloned_menu_data.__dict__)            
+                Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_MENU],update_query,cloned_menu_data.__dict__)            
            else:
-                 status = self.check_duplicates(db[self.menu_collection],menuObj,"name")
+                 status = self.check_duplicates(db[COLLECTIONS.MASTER_MENU],menuObj,"name")
                  if status is not None : 
                      raise Custom_Error(status)
                  menuObj = self.upsert_by_on(menuObj,"add",email_from_token)                              
-                 Mongo_DB_Manager.create_document(db[self.menu_collection],menuObj.__dict__)  
+                 Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_MENU],menuObj.__dict__)  
     
     def upsert_role(self,role_data,email_from_token,db):                    
            role_request = create_role_request(role_data) 
@@ -180,25 +176,25 @@ class UI_Template_Service():
            _id = roleObj._id
            
            menu_ids = roleObj.menu_ids           
-           status = self.ids_exists(menu_ids,db[self.menu_collection],value = "menu")
+           status = self.ids_exists(menu_ids,db[COLLECTIONS.MASTER_MENU],value = "menu")
            if status is not None : 
                      raise Custom_Error(status)
            
            if _id:                            
-                status = self.check_duplicates(db[self.role_collection],roleObj,"name",_id) 
+                status = self.check_duplicates(db[COLLECTIONS.MASTER_ROLE],roleObj,"name",_id) 
                 if status is not None : 
                      raise Custom_Error(status)
                 update_query = {'_id': DB_Utility.str_to_obj_id(_id)}                 
                 cloned_role_data = copy.deepcopy(roleObj)
                 cloned_role_data = self.upsert_by_on(cloned_role_data,"update",email_from_token)
-                Mongo_DB_Manager.update_document(db[self.role_collection],update_query,cloned_role_data.__dict__)   
+                Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_ROLE],update_query,cloned_role_data.__dict__)   
                 self.update_role_permissions_for_role(_id, roleObj.name, email_from_token, db)
            else:                
-                 status = self.check_duplicates(db[self.role_collection],roleObj,"name")
+                 status = self.check_duplicates(db[COLLECTIONS.MASTER_ROLE],roleObj,"name")
                  if status is not None : 
                      raise Custom_Error(status)
                  roleObj =  self.upsert_by_on(roleObj,"add",email_from_token) 
-                 role_id = Mongo_DB_Manager.create_document(db[self.role_collection],roleObj.__dict__)     
+                 role_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_ROLE],roleObj.__dict__)     
                  self.common_service.add_role_permission_for_role(DB_Utility.obj_id_to_str(role_id),roleObj.name,email_from_token,db)
     
     def ids_exists(self,ids,collection,is_upload = False,doc = None,result_dict = None,index = 0,value = None):         
@@ -248,35 +244,35 @@ class UI_Template_Service():
                    
     def delete_references(self,collection,_id,db):
     
-            if collection == db[self.widget_collection]:
-                   db[self.page_collection].update_many({"widget_ids": _id},{ "$pull": { "widget_ids":_id}})
+            if collection == db[COLLECTIONS.MASTER_WIDGET]:
+                   db[COLLECTIONS.MASTER_PAGE].update_many({"widget_ids": _id},{ "$pull": { "widget_ids":_id}})
                    
-            if collection == db[self.menu_collection]:
-                    db[self.role_collection].update_many({"menu_ids": _id},{ "$pull": { "menu_ids":_id}})
+            if collection == db[COLLECTIONS.MASTER_MENU]:
+                    db[COLLECTIONS.MASTER_ROLE].update_many({"menu_ids": _id},{ "$pull": { "menu_ids":_id}})
                     
-            if collection == db[self.sub_menu_collection]:
-                    db[self.menu_collection].update_many({"sub_menu_ids": _id},{ "$pull": { "sub_menu_ids":_id}}) 
+            if collection == db[COLLECTIONS.MASTER_SUB_MENU]:
+                    db[COLLECTIONS.MASTER_MENU].update_many({"sub_menu_ids": _id},{ "$pull": { "sub_menu_ids":_id}}) 
                     
-            if collection == db[self.page_collection]:                
-                    db[self.sub_menu_collection].update_many({"page_id": _id}, {"$unset": {"page_id": ""}})
-                    db[self.menu_collection].update_many({"page_id": _id}, {"$unset": {"page_id": ""}})
+            if collection == db[COLLECTIONS.MASTER_PAGE]:                
+                    db[COLLECTIONS.MASTER_SUB_MENU].update_many({"page_id": _id}, {"$unset": {"page_id": ""}})
+                    db[COLLECTIONS.MASTER_MENU].update_many({"page_id": _id}, {"$unset": {"page_id": ""}})
 
 
     def load_widgets(self,db,request_data = None,widget_ids=None):
         widget_objects = []  
         if widget_ids and widget_ids:            
             get_function,count = False,0           
-            widget_list = Mongo_DB_Manager.maintain_request_order_by_id(db[self.widget_collection], widget_ids, error_message="No documents found for widget id")            
+            widget_list = Mongo_DB_Manager.maintain_request_order_by_id(db[COLLECTIONS.MASTER_WIDGET], widget_ids, error_message="No documents found for widget id")            
         else:            
             get_function = True
             pagination = Pagination(**request_data)   
             #query = DB_Utility.build_filtered_data_query(pagination.filter_by) if pagination.filter_by else {}
             query = DB_Utility.frame_get_query(pagination,self.widget_key_map)         
-            widget_list = Mongo_DB_Manager.get_paginated_data(db[self.widget_collection],query,pagination)
+            widget_list = Mongo_DB_Manager.get_paginated_data(db[COLLECTIONS.MASTER_WIDGET],query,pagination)
             
             if not widget_list: 
                raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
-            count = Mongo_DB_Manager.count_documents(db[self.widget_collection], query)
+            count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_WIDGET], query)
             
         widget_objects = self.load_and_process_data(db,widget_list, WIDGET,None, None,None,get_function)   
         return widget_objects,count
@@ -284,7 +280,7 @@ class UI_Template_Service():
     def load_pages(self,db,request_data = None,page_id = None):
         count = 0
         if page_id:
-            page = db[self.page_collection].find_one({"_id":ObjectId(page_id)},{"is_deleted": False})
+            page = db[COLLECTIONS.MASTER_PAGE].find_one({"_id":ObjectId(page_id)},{"is_deleted": False})
             if not page :
                 raise Custom_Error("page not found for the page id")
             data = self.load_and_process_data(db,[page],PAGE,self.load_widgets,"widget_ids","widgets",False)   
@@ -293,24 +289,24 @@ class UI_Template_Service():
             pagination = Pagination(**request_data)            
             #query = DB_Utility.build_filtered_data_query(pagination.filter_by) if pagination.filter_by else {}
             query = DB_Utility.frame_get_query(pagination,self.page_key_map)  
-            page_data = Mongo_DB_Manager.get_paginated_data(db[self.page_collection],query,pagination)          
+            page_data = Mongo_DB_Manager.get_paginated_data(db[COLLECTIONS.MASTER_PAGE],query,pagination)          
             if not page_data: 
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
             page_objects = self.load_and_process_data(db,page_data,PAGE,self.load_widgets,"widget_ids","widgets",False)
-            count = Mongo_DB_Manager.count_documents(db[self.page_collection], query)
+            count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_PAGE], query)
         return  page_objects,count
     
     def load_sub_menus(self,db,request_data = None,sub_menu_ids = None):
         if sub_menu_ids and sub_menu_ids:            
             get_function,count = False,0            
-            sub_menu_list = Mongo_DB_Manager.maintain_request_order_by_id(db[self.sub_menu_collection], sub_menu_ids, error_message="No data found for the sub_menu id")         
+            sub_menu_list = Mongo_DB_Manager.maintain_request_order_by_id(db[COLLECTIONS.MASTER_SUB_MENU], sub_menu_ids, error_message="No data found for the sub_menu id")         
         else:
             get_function = True            
             pagination = Pagination(**request_data)      
            # query = DB_Utility.build_filtered_data_query(pagination.filter_by) if pagination.filter_by else {}
             query = DB_Utility.frame_get_query(pagination,self.sub_menu_key_map)  
-            count = Mongo_DB_Manager.count_documents(db[self.sub_menu_collection],query)          
-            sub_menu_list = Mongo_DB_Manager.get_paginated_data(db[self.sub_menu_collection],query,pagination)
+            count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_SUB_MENU],query)          
+            sub_menu_list = Mongo_DB_Manager.get_paginated_data(db[COLLECTIONS.MASTER_SUB_MENU],query,pagination)
             if not sub_menu_list: 
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)         
         sub_menu_objects = self.load_and_process_data(db,sub_menu_list,SUB_MENU,self.load_pages,"page_id","page",get_function)        
@@ -320,15 +316,15 @@ class UI_Template_Service():
     def load_menus(self,db,request_data = None,menu_ids = None):
         if menu_ids is not None and len(menu_ids) > 0:
             get_function,count = False,0
-            menu_list =Mongo_DB_Manager.maintain_request_order_by_id(db[self.menu_collection], menu_ids, error_message="No data found for the menu id")
+            menu_list =Mongo_DB_Manager.maintain_request_order_by_id(db[COLLECTIONS.MASTER_MENU], menu_ids, error_message="No data found for the menu id")
         else:      
             get_function = True
             pagination = Pagination(**request_data)       
            # query = DB_Utility.build_filtered_data_query(pagination.filter_by) if pagination.filter_by else {}
             query = DB_Utility.frame_get_query(pagination,self.menu_key_map)   
             
-            count = Mongo_DB_Manager.count_documents(db[self.menu_collection], query)        
-            menu_list = Mongo_DB_Manager.get_paginated_data(db[self.menu_collection],query,pagination)       
+            count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_MENU], query)        
+            menu_list = Mongo_DB_Manager.get_paginated_data(db[COLLECTIONS.MASTER_MENU],query,pagination)       
             if not menu_list: 
                raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
             
@@ -354,7 +350,7 @@ class UI_Template_Service():
     def load_roles(self,db,request_data = None, role_name = None):
         if role_name:
             count = 0
-            role_data = db[self.role_collection].find_one({"name":role_name},{"is_deleted" : False})
+            role_data = db[COLLECTIONS.MASTER_ROLE].find_one({"name":role_name},{"is_deleted" : False})
             if not role_data:
                 return None,count
             role_objects = self.load_and_process_data(db,[role_data],ROLE,self.load_menus,"menu_ids","menus",False)
@@ -363,8 +359,8 @@ class UI_Template_Service():
            # query = DB_Utility.build_filtered_data_query(pagination.filter_by) if pagination.filter_by else {}
             query = DB_Utility.frame_get_query(pagination,self.role_key_map)   
             
-            count = Mongo_DB_Manager.count_documents(db[self.role_collection], query)            
-            role_data = Mongo_DB_Manager.get_paginated_data(db[self.role_collection],query,pagination)       
+            count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_ROLE], query)            
+            role_data = Mongo_DB_Manager.get_paginated_data(db[COLLECTIONS.MASTER_ROLE],query,pagination)       
             if not role_data: 
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
            
@@ -452,11 +448,11 @@ class UI_Template_Service():
                         print("index in null value check ::",index)                        
                         continue
                    
-                    if self.check_duplicates(db[self.widget_collection],doc,"file_name",doc._id,is_upload,result_dict,index):
+                    if self.check_duplicates(db[COLLECTIONS.MASTER_WIDGET],doc,"file_name",doc._id,is_upload,result_dict,index):
                         print("index in duplicate values ::",index)                      
                         continue
                     
-                    result_dict[index] = self.insert_or_update_obj(db[self.widget_collection],doc, email_from_token)
+                    result_dict[index] = self.insert_or_update_obj(db[COLLECTIONS.MASTER_WIDGET],doc, email_from_token)
 
                 except Exception as e:
                     self.logger.error(f"Error processing document at index {index}: {e}")
@@ -485,7 +481,7 @@ class UI_Template_Service():
                          del doc.widget_ids                        
                          doc.widget_ids = new_widget_ids
                          print("doc",doc.__dict__)
-                         if self.ids_exists(new_widget_ids,db[self.widget_collection],is_upload,doc,result_dict,index,value = "widget"):
+                         if self.ids_exists(new_widget_ids,db[COLLECTIONS.MASTER_WIDGET],is_upload,doc,result_dict,index,value = "widget"):
                              print("widget_id does not  exists::",index)                        
                              continue         
                     
@@ -494,11 +490,11 @@ class UI_Template_Service():
                         print("index in null value check ::",index)                        
                         continue
                    
-                    if self.check_duplicates(db[self.page_collection],doc,"router_link",doc._id,is_upload,result_dict,index):
+                    if self.check_duplicates(db[COLLECTIONS.MASTER_PAGE],doc,"router_link",doc._id,is_upload,result_dict,index):
                         print("index in duplicate values ::",index)                      
                         continue
                     
-                    result_dict[index] = self.insert_or_update_obj(db[self.page_collection],doc, email_from_token)
+                    result_dict[index] = self.insert_or_update_obj(db[COLLECTIONS.MASTER_PAGE],doc, email_from_token)
 
                 except Exception as e:
                     self.logger.error(f"Error processing document at index {index}: {e}")
@@ -521,7 +517,7 @@ class UI_Template_Service():
                     doc = SUB_MENU(**doc)
                     page_id = doc.page_id
                     if page_id:                         
-                        if self.ids_exists([page_id],db[self.page_collection],is_upload,doc,result_dict,index,value = "page"):
+                        if self.ids_exists([page_id],db[COLLECTIONS.MASTER_PAGE],is_upload,doc,result_dict,index,value = "page"):
                              print("page_id does not  exists::",index)                        
                              continue     
                     
@@ -530,11 +526,11 @@ class UI_Template_Service():
                         print("index in null value check ::",index)                        
                         continue
                    
-                    if self.check_duplicates(db[self.sub_menu_collection],doc,"name",doc._id,is_upload,result_dict,index):
+                    if self.check_duplicates(db[COLLECTIONS.MASTER_SUB_MENU],doc,"name",doc._id,is_upload,result_dict,index):
                         print("index in duplicate values ::",index)                      
                         continue
                     
-                    result_dict[index] = self.insert_or_update_obj(db[self.sub_menu_collection],doc, email_from_token)
+                    result_dict[index] = self.insert_or_update_obj(db[COLLECTIONS.MASTER_SUB_MENU],doc, email_from_token)
 
                 except Exception as e:
                     self.logger.error(f"Error processing document at index {index}: {e}")
@@ -565,13 +561,13 @@ class UI_Template_Service():
                         continue
                     
                     if page_id:                         
-                        if self.ids_exists([page_id],db[self.page_collection],is_upload,doc,result_dict,index,value = "page"):
+                        if self.ids_exists([page_id],db[COLLECTIONS.MASTER_PAGE],is_upload,doc,result_dict,index,value = "page"):
                              print("page_id does not  exists::",index)                        
                              continue
                         
                     if sub_menu_ids:
                          new_sub_menu_ids = sub_menu_ids.split(',')                     
-                         if self.ids_exists(new_sub_menu_ids,db[self.sub_menu_collection],is_upload,doc,result_dict,index,value = "sub_menu"):
+                         if self.ids_exists(new_sub_menu_ids,db[COLLECTIONS.MASTER_SUB_MENU],is_upload,doc,result_dict,index,value = "sub_menu"):
                              print("sub_menu_ids does not  exists::",index)                        
                              continue
                          doc.sub_menu_ids = new_sub_menu_ids
@@ -583,11 +579,11 @@ class UI_Template_Service():
                         print("index in null value check ::",index)                        
                         continue
                    
-                    if self.check_duplicates(db[self.sub_menu_collection],doc,"name",doc._id,is_upload,result_dict,index):
+                    if self.check_duplicates(db[COLLECTIONS.MASTER_SUB_MENU],doc,"name",doc._id,is_upload,result_dict,index):
                         print("index in duplicate values ::",index)                      
                         continue
                     print("doc :",doc)
-                    result_dict[index] = self.insert_or_update_obj(db[self.sub_menu_collection],doc, email_from_token)
+                    result_dict[index] = self.insert_or_update_obj(db[COLLECTIONS.MASTER_SUB_MENU],doc, email_from_token)
 
                 except Exception as e:
                     self.logger.error(f"Error processing document at index {index}: {e}")
@@ -614,7 +610,7 @@ class UI_Template_Service():
                          new_menu_ids = menu_ids.split(',')                         
                          del doc.menu_ids
                          doc.menu_ids = new_menu_ids 
-                         if self.ids_exists(new_menu_ids,db[self.sub_menu_collection],is_upload,doc,result_dict,index,value = "menu"):
+                         if self.ids_exists(new_menu_ids,db[COLLECTIONS.MASTER_SUB_MENU],is_upload,doc,result_dict,index,value = "menu"):
                              print("sub_menu_ids does not  exists::",index)                        
                              continue
                     
@@ -622,11 +618,11 @@ class UI_Template_Service():
                         print("index in null value check ::",index)                        
                         continue
                    
-                    if self.check_duplicates(db[self.sub_menu_collection],doc,"name",doc._id,is_upload,result_dict,index):
+                    if self.check_duplicates(db[COLLECTIONS.MASTER_SUB_MENU],doc,"name",doc._id,is_upload,result_dict,index):
                         print("index in duplicate values ::",index)                      
                         continue
                     
-                    result_dict[index] = self.insert_or_update_obj(db[self.sub_menu_collection],doc, email_from_token)
+                    result_dict[index] = self.insert_or_update_obj(db[COLLECTIONS.MASTER_SUB_MENU],doc, email_from_token)
 
                 except Exception as e:
                     self.logger.error(f"Error processing document at index {index}: {e}")

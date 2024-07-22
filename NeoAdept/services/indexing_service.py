@@ -11,6 +11,7 @@ from whoosh import scoring
 from whoosh.query import And
 
 from NeoAdept.config import Config
+from NeoAdept.utilities.collection_names import COLLECTIONS
 
 from ..gbo.common import Custom_Error
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
@@ -28,9 +29,9 @@ class Indexing_Service:
     def __init__(self,logger,db,key_set_map,key_set_index_map,config:Config):
         if not hasattr(self, 'initialized'):
             self.index_folder = config.index_folder
-            self.collection = db["CANDIDATE_DETAILS"]
-            self.search_history_collection = db["SEARCH_HISTORY"]
-            self.sample_collection = db["sample"]
+            self.collection = db[COLLECTIONS.ATS_CANDIDATE_DETAILS]
+            self.search_history_collection = db[COLLECTIONS.ATS_SEARCH_HISTORY]
+            self.sample_collection = db[COLLECTIONS.CONFIG_SAMPLE]
             self.key_set_map = key_set_map
             self.key_set_index_map =  key_set_index_map
             #if self.key_set_index_map and "CANDIDATE_DETAILS" in self.key_set_index_map:

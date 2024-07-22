@@ -6,6 +6,7 @@ from NeoAdept.pojo.directory import DIRECTORY
 from NeoAdept.pojo.email_details import EMAIL_DETAILS
 from NeoAdept.pojo.access_token import ACCESS_TOKEN
 from NeoAdept.services.common_service import Common_Service
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
@@ -38,12 +39,10 @@ class Email_Service:
             self.logger = logger
             self.config = config
             self.db = db
-            self.emails_collection = "EMAIL_DETAILS"
             self.directory = DIRECTORY()
             self.key_nested_key_map = keyset_map
-            if "EMAIL_DETAILS" in keyset_map:
-                self.key_map = self.key_nested_key_map["EMAIL_DETAILS"]
-            self.common_service = Common_Service(logger,db,keyset_map)
+            self.key_map = self.key_nested_key_map[COLLECTIONS.MASTER_EMAIL_DETAILS]
+            #self.common_service = Common_Service(logger,db,keyset_map)
             self.SENDPULSE_API_KEY = self.config.sendpulse_api_key
             self.SENDPULSE_API_SECRET = self.config.sendpulse_api_secret
             self.SENDPULSE_TOKEN_URL = self.config.sendpulse_token_url
@@ -92,7 +91,7 @@ class Email_Service:
             'attachments': saved_attachments,
             'sent_on': Utility.get_current_time()
         }
-        result = Mongo_DB_Manager.create_document(db[self.emails_collection],email_data)
+        result = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_EMAIL_DETAILS],email_data)
         if not result:
             raise Custom_Error('Could not save mail info in db')
         
@@ -132,7 +131,7 @@ class Email_Service:
             'attachments': saved_attachments,
             'sent_on': Utility.get_current_time()
         }
-        result = Mongo_DB_Manager.create_document(db[self.emails_collection],email_data)
+        result = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_EMAIL_DETAILS],email_data)
         if not result:
             raise Custom_Error('Could not save mail info in db')
           
@@ -141,9 +140,9 @@ class Email_Service:
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         pagination = Pagination(**request_data) 
         
-        self.common_service.create_log_details(identity_data_obj.email,request_data,"view_mail_history",db)
+        ##self.common_service.create_log_details(identity_data_obj.email,request_data,"view_mail_history",db)
         
-        email_collection = db[self.emails_collection]
+        email_collection = db[COLLECTIONS.MASTER_EMAIL_DETAILS]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
            
         docs,count = Mongo_DB_Manager.get_paginated_data1(email_collection,query,pagination) 

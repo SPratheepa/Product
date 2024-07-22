@@ -179,7 +179,7 @@ class Common_Service:
         
         pagination = Pagination(**request_data) 
         
-        self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
+       #self.create_log_details(identity_data_obj.email,request_data,"get_log_details",db)
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.log_details],query,pagination) 
 
@@ -379,7 +379,7 @@ class Common_Service:
         column_visibility_data = request_data[dynamic_key]    
 
         # Find existing document in USER_COULMN_VISIBILITY collection
-        column_document = db["USER_DETAILS"].find_one({'_id': DB_Utility.str_to_obj_id(request_data["user_id"])})
+        column_document = db["MASTER_USER_DETAILS"].find_one({'_id': DB_Utility.str_to_obj_id(request_data["user_id"])})
         visibility = column_document.get("visibility", {}) if column_document else {}
         
         if not column_document or "visibility" not in column_document:
@@ -397,7 +397,7 @@ class Common_Service:
                     visibility_path: column_visibility_data
                 }
             }
-            db["USER_DETAILS"].update_one(
+            db["MASTER_USER_DETAILS"].update_one(
                 {'_id': DB_Utility.str_to_obj_id(user_id)},
                 update_operation, upsert=True
             )
@@ -407,14 +407,14 @@ class Common_Service:
                     "_id": ObjectId(user_id),visibility_path: 1
                 }
 
-            visibility_path_exists = db["USER_DETAILS"].find_one(
+            visibility_path_exists = db["MASTER_USER_DETAILS"].find_one(
             filter_criteria,
             projection={ visibility_path: 1}
         )
             #print("visibility_path_exists-----------------",visibility_path_exists,visibility_path)
             if not visibility_path_exists:
             # Initialize visibility if it doesn't exist
-                db["USER_DETAILS"].update_one(
+                db["MASTER_USER_DETAILS"].update_one(
                     {"_id": ObjectId(user_id)},
                     {"$set": { visibility_path: []}}
                 )
@@ -424,7 +424,7 @@ class Common_Service:
                 enable = detail.get("enable")
 
                 # Check if db_column exists in the array
-                db_column_exists = db["USER_DETAILS"].count_documents({
+                db_column_exists = db["MASTER_USER_DETAILS"].count_documents({
                     "_id": ObjectId(user_id),
                     f"{visibility_path}.db_column": db_column
                 })
@@ -447,21 +447,21 @@ class Common_Service:
                     array_filters = None
 
                 # Execute the update operation
-                result = db["USER_DETAILS"].update_one(
+                result = db["MASTER_USER_DETAILS"].update_one(
                     {"_id": ObjectId(user_id)},
                     update_operation,
                     array_filters=array_filters
                 )
 
     def get_user_id(self, db, email):       
-        document = db["USER_DETAILS"].find_one({'email': email})
+        document = db["MASTER_USER_DETAILS"].find_one({'email': email})
         if not document:
             raise Custom_Error(f"No user found with email: {email}")
         return DB_Utility.obj_id_to_str(document["_id"])
 
     def get_column_details(self,identity_data,request_data,db):      
     
-        data = list(db["COLUMN_PERMISSION"].find())
+        data = list(db["MASTER_COLUMN_PERMISSION"].find())
         print("data :",data)
         data = DB_Utility.convert_obj_id_to_str_id(data)
         print("data::",data) 
@@ -474,7 +474,7 @@ class Common_Service:
         if not user_id or not collections_data:
             raise Custom_Error("user_id and collections data are required")
         query = {'_id':DB_Utility.str_to_obj_id(user_id)}
-        user = Mongo_DB_Manager.read_one_document(db["USER_DETAILS"],query)
+        user = Mongo_DB_Manager.read_one_document(db["MASTER_USER_DETAILS"],query)
         if not user:
             raise Custom_Error("User not found")
         
@@ -647,14 +647,14 @@ class Common_Service:
 
     # Run the aggregation pipeline
         print("pipeline ",pipeline)    
-        history_entries = list(db["HISTORY"].aggregate(pipeline))
+        history_entries = list(db["ATS_HISTORY"].aggregate(pipeline))
         
         if not history_entries:
             raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
         return DB_Utility.convert_object_ids_to_strings(history_entries)
         
     def get_db_details(self,identity_data,request_data,db):      
-        data,count = Mongo_DB_Manager.get_paginated_data1(db["db_details"],{},projection={"_id":1,"db_name":1,"db_type":1},sample_doc=self.key_nested_key_map["db_details"])
+        data,count = Mongo_DB_Manager.get_paginated_data1(db["CONFIG_db_details"],{},projection={"_id":1,"db_name":1,"db_type":1},sample_doc=self.key_nested_key_map["CONFIG_db_details"])
         if data:
             return DB_Utility.convert_object_ids_to_strings(list(data)),count 
         raise Custom_Error("No Data Found")

@@ -51,7 +51,7 @@ class Init:
         if Mongo_DB_Manager.is_collection_empty(self.db['MODULE_DETAILS']):
             Module_Permission(self.config.role_permission_file).load_module_details(self.db)
 
-        if self.config.CLIENT_ENV == 'client' and Mongo_DB_Manager.is_collection_empty(self.db['WIDGET']):
+        if self.config.CLIENT_ENV == CONSTANTS.CLIENT and Mongo_DB_Manager.is_collection_empty(self.db['WIDGET']):
             Menu_Widget(self.config.ui_template_file).load_widget_menu(self.db)
             key_generator(self.db)
 
@@ -123,6 +123,45 @@ class Init:
                     "pattern": [{"LOWER": city}]
                 }
                 f.write(json.dumps(pattern) + '\n')
+                
+                
+    def create_view(db):
+        contact_details_view_pipeline = [
+                                                {"$unwind": "$contact_list"},
+                                                {
+                                                    "$project": {
+                                                        "_id": "$_id",
+                                                        "company_name": "$company_name",
+                                                        "comments": "$contact_list.comments",
+                                                        "contact_id": "$contact_list.contact_id",
+                                                        "email": "$contact_list.email",
+                                                        "name": "$contact_list.name",
+                                                        "phone": "$contact_list.phone"
+                                                    }
+                                                }
+                                            ]               
+        recent_search_pipeline = [
+                                        {
+                                            "$group": {
+                                            "_id": {
+                                                "user": "$user",
+                                                "module": "$module"
+                                            },
+                                            "search_id": { "$push": "$search_id" }
+                                            }
+                                        },
+                                        {
+                                            "$project": {
+                                            "_id": 0,
+                                            "user": "$_id.user",
+                                            "module": "$_id.module",
+                                            "search_id": 1
+                                            }
+                                        }
+                                    ]
+        Collection_Manager.create_view(db,"ATS_COMPANY_DETAILS","CONTACT_DETAILS_VIEW",contact_details_view_pipeline)
+        Collection_Manager.create_view(db,"ATS_SEARCH_DETAILS","SEARCH_DETAILS_VIEW",recent_search_pipeline)    
+        
 if __name__ == "__main__":
     Init()
     

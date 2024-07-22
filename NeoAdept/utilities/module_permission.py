@@ -16,8 +16,8 @@ class Module_Permission:
             self.EXCEL_KEYS = {
             'ROLE_PERMISSION': ['role_name', 'module', 'submodule_level_1', 'submodule_1_access']
               }     
-            self.role_collection = "ROLE"
-            self.module_details_collection = "MODULE_DETAILS"
+            self.role_collection = "MASTER_ROLE"
+            self.module_details_collection = "MASTER_MODULE_DETAILS"
    
     def load_role_permission(self,db) :     
         df_role_permission = self.load_excel_sheet("ROLE_PERMISSION",self.EXCEL_KEYS["ROLE_PERMISSION"]) 
@@ -42,7 +42,7 @@ class Module_Permission:
             role_id = DB_Utility.obj_id_to_str(role_data["_id"])
             
             role_permission_query = {'role_id': role_id}
-            existing_permission = Mongo_DB_Manager.read_one_document(db["ROLE_PERMISSION"], role_permission_query)
+            existing_permission = Mongo_DB_Manager.read_one_document(db["MASTER_ROLE_PERMISSION"], role_permission_query)
             
             if existing_permission:
                 # Update existing role permissions
@@ -54,7 +54,7 @@ class Module_Permission:
                     if module not in existing_permission['permissions']:
                         existing_permission['permissions'][module] = {}
                     existing_permission['permissions'][module][submodule] = access
-                Mongo_DB_Manager.update_document(db["ROLE_PERMISSION"], {'_id': existing_permission['_id']}, existing_permission)
+                Mongo_DB_Manager.update_document(db["MASTER_ROLE_PERMISSION"], {'_id': existing_permission['_id']}, existing_permission)
             else:
                 doc = {
                         "role_id": role_id,
@@ -71,7 +71,7 @@ class Module_Permission:
                     if module not in doc['permissions']:
                         doc['permissions'][module] = {}
                     doc['permissions'][module][submodule] = access
-                Mongo_DB_Manager.create_document(db["ROLE_PERMISSION"],doc)
+                Mongo_DB_Manager.create_document(db["MASTER_ROLE_PERMISSION"],doc)
 
     def get_role_permission_file(self,role_permission_file):     
         files_folder = self.directory.get_folder('files')       

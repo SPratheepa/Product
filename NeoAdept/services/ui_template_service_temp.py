@@ -2,6 +2,7 @@ import copy
 
 from numpy import empty
 from NeoAdept.services.common_service import Common_Service
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.constants import CONSTANTS
 from flask import json
 from bson import ObjectId
@@ -33,24 +34,19 @@ class UI_Template_Service_temp():
     def __init__(self,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
             self.key_nested_key_map = keyset_map         
-            self.role_key_map = keyset_map.get("ROLE", {})
-            self.menu_key_map = keyset_map.get("MENU", {})
-            self.sub_menu_key_map = keyset_map.get("SUB_MENU", {})
-            self.widget_key_map = keyset_map.get("WIDGET", {})
-            self.page_key_map = keyset_map.get("PAGE", {})
+            self.role_key_map = keyset_map.get(COLLECTIONS.MASTER_ROLE, {})
+            self.menu_key_map = keyset_map.get(COLLECTIONS.MASTER_MENU, {})
+            self.sub_menu_key_map = keyset_map.get(COLLECTIONS.MASTER_SUB_MENU, {})
+            self.widget_key_map = keyset_map.get(COLLECTIONS.MASTER_WIDGET, {})
+            self.page_key_map = keyset_map.get(COLLECTIONS.MASTER_PAGE, {})
             self.logger = logger            
-            self.widget_collection = "WIDGET"       
-            self.page_collection = "PAGE"
-            self.sub_menu_collection = "SUB_MENU"
-            self.menu_collection = "MENU"
-            self.role_collection = "ROLE"
-            self.common_service = Common_Service(logger,db,keyset_map)
+            #self.common_service = Common_Service(logger,db,keyset_map)
             self.collections_dict = {         
-                                        "role":db[self.role_collection],
-                                        "widget":db[self.widget_collection],
-                                        "page":db[self.page_collection],
-                                        "menu":db[self.menu_collection],
-                                        "sub_menu":db[self.sub_menu_collection]
+                                        "role":db[COLLECTIONS.MASTER_ROLE],
+                                        "widget":db[COLLECTIONS.MASTER_WIDGET],
+                                        "page":db[COLLECTIONS.MASTER_PAGE],
+                                        "menu":db[COLLECTIONS.MASTER_MENU],
+                                        "sub_menu":db[COLLECTIONS.MASTER_SUB_MENU]
 }    
     def ids_exists(self,ids,collection,is_upload = False,doc = None,result_dict = None,index = 0,value = None):         
             cursor = DB_Utility.check_id_exists(ids,collection)           
@@ -68,10 +64,10 @@ class UI_Template_Service_temp():
     def load_widgets(self,db,request_data = None):       
         pagination = Pagination(**request_data) 
         query = DB_Utility.frame_get_query(pagination,self.widget_key_map)       
-        widget_list,count = Mongo_DB_Manager.get_paginated_data1(db[self.widget_collection],query,pagination)
+        widget_list,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_WIDGET],query,pagination)
         if not widget_list: 
             raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
-        #count = Mongo_DB_Manager.count_documents(db[self.widget_collection], query)
+        #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_WIDGET], query)
         #for widget in widget_list:         
             #widget= DB_Utility.convert_obj_id_to_str_id(widget)                
         return widget_list,count    
@@ -80,7 +76,7 @@ class UI_Template_Service_temp():
     def load_pages(self,db,request_data = None):       
             pagination = Pagination(**request_data)            
             query = DB_Utility.frame_get_query(pagination,self.page_key_map)  
-            page_data,count = Mongo_DB_Manager.get_paginated_data1(db[self.page_collection],query,pagination)          
+            page_data,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_PAGE],query,pagination)          
             if not page_data: 
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)  
             all_widget_ids = set()
@@ -94,7 +90,7 @@ class UI_Template_Service_temp():
         # Fetch all widgets in one query
             if all_widget_ids:
                 widget_query = {"_id": {"$in": list(all_widget_ids)}}
-                all_widgets = Mongo_DB_Manager.read_documents(db[self.widget_collection], widget_query)
+                all_widgets = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_WIDGET], widget_query)
 
                 # Convert widgets to a dictionary keyed by their string ID for easy lookup
                 widget_dict = {
@@ -111,14 +107,14 @@ class UI_Template_Service_temp():
                 page_new = DB_Utility.convert_obj_id_to_str_id(page)               
                 page_data_list.append(page_new)      
             #page_data = self.process_page(page_data,db)             
-            #count = Mongo_DB_Manager.count_documents(db[self.page_collection], query)
+            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_PAGE], query)
             return  page_data_list,count
     
     def load_sub_menus(self,db,request_data = None):                
         pagination = Pagination(**request_data)    
         query = DB_Utility.frame_get_query(pagination,self.sub_menu_key_map)  
-        #count = Mongo_DB_Manager.count_documents(db[self.sub_menu_collection],query)          
-        sub_menu_list,count = Mongo_DB_Manager.get_paginated_data1(db[self.sub_menu_collection],query,pagination)
+        #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_SUB_MENU],query)          
+        sub_menu_list,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_SUB_MENU],query,pagination)
         if not sub_menu_list: 
             raise Custom_Error(CONSTANTS.NO_DATA_FOUND)       
         sub_menu_list = self.process_sub_menu1(sub_menu_list,db)           
@@ -127,8 +123,8 @@ class UI_Template_Service_temp():
     def load_menus(self,db,request_data = None):
         pagination = Pagination(**request_data)                 
         query = DB_Utility.frame_get_query(pagination,self.menu_key_map)  
-        #count = Mongo_DB_Manager.count_documents(db[self.menu_collection], query)        
-        menu_list,count = Mongo_DB_Manager.get_paginated_data1(db[self.menu_collection],query,pagination)       
+        #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_MENU], query)        
+        menu_list,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_MENU],query,pagination)       
         if not menu_list: 
             raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
         menu_list = self.process_menu(list(menu_list),db)
@@ -136,7 +132,7 @@ class UI_Template_Service_temp():
     
     def load_roles(self,db,request_data = None, role_name = None):      
         if role_name:
-            role_data = db[self.role_collection].find_one({"name": role_name, "is_deleted": False})
+            role_data = db[COLLECTIONS.MASTER_ROLE].find_one({"name": role_name, "is_deleted": False})
             count = 1 if role_data else 0
             if not role_data:
                 return None, count
@@ -144,8 +140,8 @@ class UI_Template_Service_temp():
         else:           
             pagination = Pagination(**request_data)
             query = DB_Utility.frame_get_query(pagination, self.role_key_map)
-            #count = Mongo_DB_Manager.count_documents(db[self.role_collection], query)
-            role_data,count = Mongo_DB_Manager.get_paginated_data1(db[self.role_collection], query, pagination)
+            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_ROLE], query)
+            role_data,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_ROLE], query, pagination)
             if not role_data:
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
     
@@ -155,7 +151,7 @@ class UI_Template_Service_temp():
         if all_menu_ids:
             converted_menu_ids = DB_Utility.str_id_list_to_obj_list(list(all_menu_ids))
             menu_query = {"_id": {"$in": converted_menu_ids}, "is_deleted": False}
-            all_menus = Mongo_DB_Manager.read_documents(db[self.menu_collection], menu_query)
+            all_menus = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_MENU], menu_query)
             processed_menus = self.process_menu(list(all_menus), db)
         
             menu_dict = {str(menu["_id"]): DB_Utility.convert_obj_id_to_str_id(menu) for menu in processed_menus}
@@ -359,7 +355,7 @@ class UI_Template_Service_temp():
         # Fetch all widgets in one query
             if all_widget_ids:
                 widget_query = {"_id": {"$in": list(all_widget_ids)}}
-                all_widgets = Mongo_DB_Manager.read_documents(db[self.widget_collection], widget_query)
+                all_widgets = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_WIDGET], widget_query)
 
                 # Convert widgets to a dictionary keyed by their string ID for easy lookup
                 widget_dict = {
@@ -387,7 +383,7 @@ class UI_Template_Service_temp():
                 if all_page_ids:
                     all_page_ids_list = list(all_page_ids)
                     page_query = {"_id": {"$in": all_page_ids_list}, "is_deleted": False}
-                    all_pages = Mongo_DB_Manager.read_documents(db[self.page_collection], page_query)
+                    all_pages = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_PAGE], page_query)
                     all_pages = self.process_page(list(all_pages),db)                
                 page_dict = {
                 str(page["_id"]): DB_Utility.convert_obj_id_to_str_id(page)
@@ -412,7 +408,7 @@ class UI_Template_Service_temp():
             if all_page_ids:
                     all_page_ids_list = list(all_page_ids)
                     page_query = {"_id": {"$in": all_page_ids_list}, "is_deleted": False}
-                    all_pages = Mongo_DB_Manager.read_documents(db[self.page_collection], page_query)
+                    all_pages = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_PAGE], page_query)
                     all_pages = self.process_page(list(all_pages),db)                
                     page_dict = {
                 str(page["_id"]): DB_Utility.convert_obj_id_to_str_id(page)
@@ -445,7 +441,7 @@ class UI_Template_Service_temp():
         if all_sub_menu_ids:
             converted_sub_menu_ids = DB_Utility.str_id_list_to_obj_list(list(all_sub_menu_ids))
             sub_menu_query = {"_id": {"$in": converted_sub_menu_ids}, "is_deleted": False}
-            all_sub_menus = Mongo_DB_Manager.read_documents(db[self.sub_menu_collection], sub_menu_query)
+            all_sub_menus = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_SUB_MENU], sub_menu_query)
             processed_sub_menus = self.process_sub_menu1(list(all_sub_menus), db)           
             sub_menu_dict = {
                 str(sub_menu["_id"]): DB_Utility.convert_obj_id_to_str_id(sub_menu)
@@ -454,7 +450,7 @@ class UI_Template_Service_temp():
         if all_page_ids:
             all_page_ids_list = list(all_page_ids)
             page_query = {"_id": {"$in": all_page_ids_list}, "is_deleted": False}
-            all_pages = Mongo_DB_Manager.read_documents(db[self.page_collection], page_query)
+            all_pages = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_PAGE], page_query)
             all_pages = self.process_page(list(all_pages),db)                
             page_dict = {
             str(page["_id"]): DB_Utility.convert_obj_id_to_str_id(page)

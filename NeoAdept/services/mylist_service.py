@@ -5,6 +5,8 @@ from NeoAdept.services.common_service import Common_Service
 from bson import ObjectId
 from flask import send_file
 
+from NeoAdept.utilities.collection_names import COLLECTIONS
+
 from ..pojo.access_token import ACCESS_TOKEN
 from ..config import Config
 from ..gbo.bo import Common_Fields, Pagination
@@ -26,19 +28,11 @@ class My_List_Service():
     def __init__(self,config,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
             self.logger = logger
-            #self.db = db
-            self.list_details_collection = "LIST_GROUP"
-            #self.list_view_collection = "LIST_VIEW"
-            self.file_email_grouping_collection = "FILE_EMAIL_GROUPING"
-            self.candidate_collection = "CANDIDATE_DETAILS"
-            self.file_group_view = "FILE_GROUP_VIEW"
             self.my_list_file = config.list_group_file_name
-            self.key_nested_key_map = keyset_map
-            if "LIST_GROUP" in keyset_map:
-                self.key_map = self.key_nested_key_map["LIST_GROUP"]
-            if "FILE_GROUP_VIEW" in keyset_map:
-                self.key_file_map = self.key_nested_key_map["FILE_GROUP_VIEW"]
-            self.common_service = Common_Service(logger,db,keyset_map)
+            self.keyset_map = keyset_map
+            self.key_map = keyset_map[COLLECTIONS.ATS_LIST_GROUP]
+            self.key_file_map = keyset_map[COLLECTIONS.FILE_GROUP_VIEW]
+            #self.common_service = Common_Service(logger,db,keyset_map)
             self.get_file_group_view(db)
 
     def add_new_group(self, list_data,identity_data,db): #add condition already available name and deleted name available ,store data or not
@@ -54,7 +48,7 @@ class My_List_Service():
         
         fields_to_check = ["list_name"]
         query = DB_Utility.fields_to_check(list_data_obj,fields_to_check)
-        existing_list = Mongo_DB_Manager.read_one_document(db[self.list_details_collection], query)
+        existing_list = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_LIST_GROUPn], query)
                 
         if existing_list:
             raise Custom_Error(CONSTANTS.LIST_NAME_EXISTS)
@@ -67,7 +61,7 @@ class My_List_Service():
         attributes_to_delete = ["updated_by","updated_on","_id","list_id"]
         list_data_obj = DB_Utility.delete_attributes_from_obj(list_data_obj,attributes_to_delete)
                 
-        list_id = Mongo_DB_Manager.create_document(db[self.list_details_collection],list_data_obj.__dict__)
+        list_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.ATS_LIST_GROUPn],list_data_obj.__dict__)
         if not list_id:
             raise Custom_Error('Could not add list')
         
@@ -86,7 +80,7 @@ class My_List_Service():
         _id = DB_Utility.str_to_obj_id(list_data_obj._id)
         query = DB_Utility.update_keys_check(list_data_obj,['list_name'],_id)
         
-        cursor = Mongo_DB_Manager.read_documents(db[self.list_details_collection],query)
+        cursor = Mongo_DB_Manager.read_documents(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         existing_lists = list(cursor)
                  
         if _id not in [list['_id'] for list in existing_lists]:
@@ -103,16 +97,16 @@ class My_List_Service():
         list_data_obj.updated_by = email_from_token
 
         query =  {"_id": _id}  
-        result = Mongo_DB_Manager.update_document(db[self.list_details_collection], query, list_data_obj.__dict__)
+        result = Mongo_DB_Manager.update_document(db[COLLECTIONS.ATS_LIST_GROUPn], query, list_data_obj.__dict__)
         if result == 0:
             raise Custom_Error('Could not update list name')  
         
         update_grouping_query = {"list_id": DB_Utility.obj_id_to_str(_id)}
-        document_count = Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection], update_grouping_query)
+        document_count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], update_grouping_query)
 
         if document_count > 0:
             update_data = {"list_name": list_data_obj.list_name}
-            Mongo_DB_Manager.update_documents(db[self.file_email_grouping_collection], update_grouping_query, update_data)
+            Mongo_DB_Manager.update_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], update_grouping_query, update_data)
 
                 
     def remove_id_from_obj(self,my_list_details_obj):
@@ -135,7 +129,7 @@ class My_List_Service():
         id_objects_list = DB_Utility.str_id_list_to_obj_list(_id_list)
        
         query = {"_id":{'$in':id_objects_list}}
-        existing_documents = Mongo_DB_Manager.read_documents(db[self.list_details_collection],query)
+        existing_documents = Mongo_DB_Manager.read_documents(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         if not existing_documents:
             raise Custom_Error("List not found")
         
@@ -159,30 +153,30 @@ class My_List_Service():
             update_one_operation = DB_Utility.build_update_query_for_bulk_opr({'_id':_id}, doc_obj.__dict__)
             delete_list_details_list.append(update_one_operation)
             update_grouping_query = {'list_id':DB_Utility.obj_id_to_str(_id)}
-            document_count = Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection], update_grouping_query)
+            document_count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], update_grouping_query)
             if document_count > 0:
                 update_group_operation = DB_Utility.build_update_query_for_bulk_opr(update_grouping_query, doc_obj.__dict__)
                 delete_file_group_details_list.append(update_group_operation)
         
         if len(delete_list_details_list) > 0:
-            deleted_count = Mongo_DB_Manager.bulk_write_operations(db[self.list_details_collection],delete_list_details_list)
+            deleted_count = Mongo_DB_Manager.bulk_write_operations(db[COLLECTIONS.ATS_LIST_GROUPn],delete_list_details_list)
             
             if deleted_count.modified_count != len(_id_list):
                 raise Custom_Error(CONSTANTS.FEW_RECORDS_NOT_DEL)
             
             if len(delete_file_group_details_list) > 0:
                 query = {"list_id": DB_Utility.obj_id_to_str(_id)}
-                deleted_count = Mongo_DB_Manager.delete_documents(db[self.file_email_grouping_collection],query)
+                deleted_count = Mongo_DB_Manager.delete_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],query)
                 #self.update_candidate_count(db,DB_Utility.obj_id_to_str(_id))
-                #deleted_count = Mongo_DB_Manager.bulk_write_operations(db[self.file_email_grouping_collection],delete_file_group_details_list)
+                #deleted_count = Mongo_DB_Manager.bulk_write_operations(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],delete_file_group_details_list)
             
             
     def get_group_list(self,identity_data, request_data,db):
         
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         pagination = Pagination(**request_data) 
-        self.common_service.create_log_details(identity_data_obj.email,request_data,"get_group_list",db)
-        list_collection = db[self.list_details_collection]
+        ##self.common_service.create_log_details(identity_data_obj.email,request_data,"get_group_list",db)
+        list_collection = db[COLLECTIONS.ATS_LIST_GROUPn]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         
         docs,count = Mongo_DB_Manager.get_paginated_data1(list_collection,query,pagination) 
@@ -346,7 +340,7 @@ class My_List_Service():
         _id = list_data_obj.list_id
         query = {"_id": DB_Utility.str_to_obj_id(_id)}
                 
-        existing_list = Mongo_DB_Manager.read_one_document(db[self.list_details_collection],query)
+        existing_list = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         if not existing_list:
             raise Custom_Error("List not found")
 
@@ -358,11 +352,11 @@ class My_List_Service():
         new_grouping_details_list = []
         for candidate_id in candidate_ids:
             query = {'candidate_id': candidate_id, 'list_id': list_id}
-            if Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection], query) > 0:
+            if Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], query) > 0:
                 continue
 
             query = {'_id': DB_Utility.str_to_obj_id(candidate_id), 'is_deleted': False}
-            candidate_info = Mongo_DB_Manager.read_one_document(db[self.candidate_collection], query)
+            candidate_info = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_CANDIDATE_DETAILS], query)
             if not candidate_info:
                 raise Custom_Error(f'Candidate info not found for candidate ID {candidate_id}')
             
@@ -370,7 +364,7 @@ class My_List_Service():
             grouping_data = {"list_id": list_id, "list_name": list_name, "candidate_id": candidate_id, "email": email}
             new_grouping_details_list.append(grouping_data)
         if len(new_grouping_details_list) > 0:
-            inserted_ids = Mongo_DB_Manager.create_documents(db[self.file_email_grouping_collection],new_grouping_details_list)
+            inserted_ids = Mongo_DB_Manager.create_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],new_grouping_details_list)
             self.update_candidate_count(db, list_id)
         
     def remove_cv_from_group(self,list_data,db):
@@ -384,7 +378,7 @@ class My_List_Service():
         _id = list_data_obj.list_id
         query = {"_id": DB_Utility.str_to_obj_id(_id)}
                 
-        existing_list = Mongo_DB_Manager.read_one_document(db[self.list_details_collection],query)
+        existing_list = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         if not existing_list:
             raise Custom_Error("List not found")
         
@@ -394,8 +388,8 @@ class My_List_Service():
         files_removed = False
         for candidate_id in candidate_ids:
             query = {'candidate_id': candidate_id, 'list_id': list_id}
-            if Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection],query) > 0 :
-                Mongo_DB_Manager.delete_documents(db[self.file_email_grouping_collection],query)
+            if Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],query) > 0 :
+                Mongo_DB_Manager.delete_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],query)
                 self.update_candidate_count(db, list_id)
                 files_removed = True
         if files_removed!=True:       
@@ -406,7 +400,7 @@ class My_List_Service():
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         
         
-        self.common_service.create_log_details(identity_data_obj.email,request_data,"get_cv_group_list",db)
+        #self.common_service.create_log_details(identity_data_obj.email,request_data,"get_cv_group_list",db)
         list_id=request_data.get(CONSTANTS.LIST_ID)
         if not list_id:
             raise Custom_Error(CONSTANTS.LIST_ID_MISSING)
@@ -420,13 +414,13 @@ class My_List_Service():
             filter_by.append({"list_id": [list_id]})
         pagination.filter_by = filter_by
                  
-        candidate_ids_cursor = db[self.file_email_grouping_collection].find({"list_id": list_id}, {"candidate_id": 1})
+        candidate_ids_cursor = db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING].find({"list_id": list_id}, {"candidate_id": 1})
         candidate_ids = [str(doc['candidate_id']) for doc in candidate_ids_cursor]
         #if not candidate_ids:
          
         #self.get_file_group_view(db)
         
-        file_group_view_collection = db[self.file_group_view]
+        file_group_view_collection = db[COLLECTIONS.FILE_GROUP_VIEW]
         
         query = DB_Utility.frame_get_query(pagination,self.key_file_map)
            
@@ -442,7 +436,7 @@ class My_List_Service():
         #raise Custom_Error(CONSTANTS.NO_DATA_FOUND) 
         
     def get_file_group_view(self,db):
-        if 'FILE_GROUP_VIEW' not in db.list_collection_names() or Mongo_DB_Manager.is_collection_empty(db[self.file_group_view]):
+        if 'FILE_GROUP_VIEW' not in db.list_collection_names() or Mongo_DB_Manager.is_collection_empty(db[COLLECTIONS.FILE_GROUP_VIEW]):
             self.create_file_group_view(db)          
                             
     def create_file_group_view(self,db):
@@ -576,8 +570,8 @@ class My_List_Service():
         from_list_query = {"_id": DB_Utility.str_to_obj_id(from_list_id)}
         to_list_query = {"_id": DB_Utility.str_to_obj_id(to_list_id)}
     
-        from_list = Mongo_DB_Manager.read_one_document(db[self.list_details_collection], from_list_query)
-        to_list = Mongo_DB_Manager.read_one_document(db[self.list_details_collection], to_list_query)
+        from_list = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_LIST_GROUPn], from_list_query)
+        to_list = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_LIST_GROUPn], to_list_query)
     
         if not from_list:
             raise Custom_Error("Source list not found")
@@ -594,15 +588,15 @@ class My_List_Service():
         new_grouping_details_list = []
         for candidate_id in candidate_ids:
             delete_query = {'candidate_id': candidate_id, 'list_id': from_list_id}
-            if Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection], delete_query) == 0:
+            if Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], delete_query) == 0:
                 raise Custom_Error(f'Candidate {candidate_id} not found in the source list')
         
             # Delete from the source list
-            Mongo_DB_Manager.delete_documents(db[self.file_email_grouping_collection], delete_query)
+            Mongo_DB_Manager.delete_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], delete_query)
         
             # Add to the destination list
             candidate_query = {'_id': DB_Utility.str_to_obj_id(candidate_id), 'is_deleted': False}
-            candidate_info = Mongo_DB_Manager.read_one_document(db[self.candidate_collection], candidate_query)
+            candidate_info = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_CANDIDATE_DETAILS], candidate_query)
         
             if not candidate_info:
                 raise Custom_Error(f'Candidate info not found for candidate ID {candidate_id}')
@@ -617,20 +611,20 @@ class My_List_Service():
             new_grouping_details_list.append(grouping_data)
     
         if new_grouping_details_list:
-            Mongo_DB_Manager.create_documents(db[self.file_email_grouping_collection], new_grouping_details_list)
+            Mongo_DB_Manager.create_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], new_grouping_details_list)
             self.update_candidate_count(db, from_list_id)
             self.update_candidate_count(db, to_list_id)
             
     def update_candidate_count(self,db, list_id):
         query = {'list_id': list_id}
-        candidate_count = Mongo_DB_Manager.count_documents(db[self.file_email_grouping_collection], query)
+        candidate_count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING], query)
         query = {'_id': DB_Utility.str_to_obj_id(list_id)}
         update_query =  {"candidate_count": candidate_count}
-        Mongo_DB_Manager.update_document(db[self.list_details_collection],query,update_query)
+        Mongo_DB_Manager.update_document(db[COLLECTIONS.ATS_LIST_GROUPn],query,update_query)
         
     def remove_candidates_from_list(self, _id_list, db):
-        affected_lists = db[self.file_email_grouping_collection].distinct("list_id", {"candidate_id": {"$in": _id_list}})
+        affected_lists = db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING].distinct("list_id", {"candidate_id": {"$in": _id_list}})
         query = {"candidate_id": {"$in": _id_list}}
-        Mongo_DB_Manager.delete_documents(db[self.file_email_grouping_collection],query)
+        Mongo_DB_Manager.delete_documents(db[COLLECTIONS.ATS_FILE_EMAIL_GROUPING],query)
         for list_id in affected_lists:
             self.update_candidate_count(db,list_id)

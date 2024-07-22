@@ -2,6 +2,7 @@ import pymongo
 from NeoAdept.gbo.bo import Base_Response, Pagination
 from NeoAdept.gbo.common import Custom_Error
 from NeoAdept.pojo.access_token import ACCESS_TOKEN
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.constants import CONSTANTS
 from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from NeoAdept.utilities.utility import Utility
@@ -20,8 +21,6 @@ class Dynamic_DB_Service:
         if not hasattr(self, 'initialized'):
             self.logger = logger
             self.keyset_map_dt = keyset_map_dt
-            self.sample_collection = "sample"
-            self.column_visibility = 'COLUMN_VISIBILITY'
             self.session = session
             self.sql_table_list = sql_table_list
             self.operators_map = {
@@ -39,82 +38,6 @@ class Dynamic_DB_Service:
                 "default": []
             }
     
-    '''        
-    def get_collection_listabcd(self, request_data, db, identity_data):
-        page = int(request_data.get("page", 1))  
-        per_page = int(request_data.get("per_page", 10))  
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
-        filter_by = request_data.get("filter_by", [])
-
-        query = {"widget_enable": True}
-        widget_enabled_docs = Mongo_DB_Manager.read_documents(db[self.sample_collection], query)
-        
-        # Extract the collection names from the widget enabled documents
-        widget_enabled_collections = [doc.get("key") for doc in widget_enabled_docs if "key" in doc]
-        
-        collection_names = db.list_collection_names()
-
-        collections = []
-        for collection_name in collection_names:
-            
-            if collection_name in widget_enabled_collections and collection_name in self.keyset_map_dt:
-                columns = self.keyset_map_dt[collection_name]
-                collections.append({"name": collection_name, "columns": columns})
-                
-        if sort_by == "collection_name":
-            if order_by == "asc":
-                collections.sort(key=lambda x: x["name"])
-            elif order_by == "desc":
-                collections.sort(key=lambda x: x["name"], reverse=True)
-            else:
-                raise Custom_Error("Invalid value for 'order_by'")
-            
-        if filter_by:
-            filtered_collections = []
-            filter_collection_names = [item["collection_name"] for item in filter_by]
-            for inner_list in filter_collection_names:
-                for collection_name in inner_list:
-                    for collection in collections:
-                        if collection_name==collection['name']:
-                            filtered_collections.append(collection)
-            collections = filtered_collections
-        
-        if not request_data:  # If request_data is empty, skip pagination
-            paginated_collections = collections
-        else:
-            start_index = (page - 1) * per_page
-            end_index = start_index + per_page
-            paginated_collections = collections[start_index:end_index]
-        
-        count = len(collections)
-        # Format the data to include columns
-        formatted_collections = []
-        
-        column_visibility = Mongo_DB_Manager.read_one_document(db[self.column_visibility],{})
-        for collection in paginated_collections:
-            formatted_columns = []
-            collection_columns = column_visibility.get(collection['name'], [])
-            for column in collection_columns:
-                if column.get('widget_enable')!= False:
-                    column_name = column.get('db_column')
-                    if column_name in collection['columns']:
-                        column_datatype = collection['columns'][column_name]
-                        formatted_columns.append({
-                            "name": column_name,
-                            "datatype": column_datatype
-                        })
-            if "_id" in collection['columns']:
-                formatted_columns.append({
-                    "name": "_id",
-                    "datatype": collection['columns']['_id']
-                })
-            formatted_collections.append({
-                "collection_name": collection['name'],
-                "columns": formatted_columns
-            })
-        return formatted_collections, count
-    '''
     def get_collection_list(self, request_data, db):
         page = int(request_data.get("page", 1))  
         per_page = int(request_data.get("per_page", 10))  
@@ -130,7 +53,7 @@ class Dynamic_DB_Service:
         
         widget_enable_for_db = self.session.widget_enable_for_db
         
-        sample_docs = Mongo_DB_Manager.read_documents(db['sample'],{"key": {"$exists": True}})
+        sample_docs = Mongo_DB_Manager.read_documents(db[COLLECTIONS.CONFIG_sample],{"key": {"$exists": True}})
         sample_map = {doc['key']: doc['collection_description'] for doc in sample_docs}
         
         collections = []
@@ -262,46 +185,6 @@ class Dynamic_DB_Service:
                 paginated_attribute_names = attributes[start_index:end_index]
                 count = len(attributes)
                 return paginated_attribute_names,count
-            
-            
-    """def get_document_list(self,request_data):
-        page = int(request_data.get("page", 1))  
-        per_page = int(request_data.get("per_page", 10))  
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
-        filter_by = request_data.get("filter_by", [])
-
-        if filter_by:
-            all_documents = []
-            total_count = 0
-
-            for criterion in filter_by:
-                if "collection" in criterion:
-                    collection_names = criterion["collection"]
-                    if isinstance(collection_names, list):
-                        for collection_name in collection_names:
-                            collection = self.db.get_collection(collection_name)
-                            query = {}  
-                            cursor = collection.find(query).sort(sort_by, 1 if order_by == "asc" else -1).skip((page - 1) * per_page).limit(per_page)
-                            documents = list(cursor)
-                            count = collection.count_documents(query)  
-                            total_count += count
-                            all_documents.extend(documents)
-                    else:
-                        collection_name = collection_names
-                        collection = self.db.get_collection(collection_name)
-                        query = {} 
-                        cursor = collection.find(query).sort(sort_by, 1 if order_by == "asc" else -1).skip((page - 1) * per_page).limit(per_page)
-                        documents = list(cursor)
-                        count = collection.count_documents(query)  
-                        total_count += count
-                        all_documents.extend(documents)
-
-            # Convert object IDs to strings
-            data = DB_Utility.convert_object_ids_to_strings(all_documents)
-            return data, total_count
-
-        raise Custom_Error("No filter criteria provided.")"""
 
     def get_sql_table_list(self,identity_data,request_data):
         page = int(request_data.get("page", 1))  

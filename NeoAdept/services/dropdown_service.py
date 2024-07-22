@@ -1,5 +1,7 @@
 import pymongo
 
+from NeoAdept.utilities.collection_names import COLLECTIONS
+
 from ..gbo.bo import Pagination
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
@@ -19,9 +21,6 @@ class Dropdown_Service():
             self.logger = logger
             self.keyset_map = keyset_map
             self.filters = filters
-            #self.db = db
-            #self.dropdown_collection = db["COLLECTION_LIST_DROPDOWN"]
-            self.dropdown_collection = "COLLECTION_LIST_DROPDOWN"
             self.drop_down_list,self.dd_count = self.get_full_dropdown_list(db)
 
     def get_dropdown_list(self, get_request_data, db):       
@@ -30,7 +29,7 @@ class Dropdown_Service():
             #   raise Custom_Error(CONSTANTS.REQUIRED_FIELDS_MISSING)
 
             key_query = {'key': key}
-            doc = Mongo_DB_Manager.read_one_document(db[self.dropdown_collection], key_query)
+            doc = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.CONFIG_COLLECTION_LIST_DROPDOWN], key_query)
             if not doc:
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
 
@@ -74,7 +73,7 @@ class Dropdown_Service():
         return filters
     
     def get_full_dropdown_list(self, db):       
-            documents = Mongo_DB_Manager.read_documents(db[self.dropdown_collection], {})            
+            documents = Mongo_DB_Manager.read_documents(db[COLLECTIONS.CONFIG_COLLECTION_LIST_DROPDOWN], {})            
             if not documents:
                 raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
             documents.sort({"_id":1})
@@ -86,7 +85,7 @@ class Dropdown_Service():
                 cursor = collection.find()  # Adjust the query as needed
                 documents = list(cursor)
                 if collection_name == 'LOV_CITIES':
-                    view_country_state_city_view = db['view_country_state_city']  # Assuming 'LOV_STATES' is the collection name for states                    
+                    view_country_state_city_view = db[COLLECTIONS.CONFIG_VIEW_COUNTRY_STATE_CITY]  # Assuming 'LOV_STATES' is the collection name for states                    
                     vcs_docs = list(view_country_state_city_view.find())
                     country_list= {}
                     for vcs_doc in vcs_docs:

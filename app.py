@@ -13,6 +13,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from NeoAdept.config import Config
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.menu_widget import Menu_Widget
 from NeoAdept.utilities.module_permission import Module_Permission
 from NeoAdept.utilities.key_generator import key_generator
@@ -59,7 +60,7 @@ class NeoAdeptApp:
     def setup_sql_connections(self):
         self.sql_cm, self.inspector, self.sql_table_dt_list, self.table_list, self.db_session = {}, {}, {}, {}, {}
 
-        db_details = self.db["db_details"]
+        db_details = self.db[COLLECTIONS.DB_DETAILS]
         db_doc_list = Mongo_DB_Manager.read_documents(db_details, {})
         
         for db_doc in db_doc_list:
@@ -79,32 +80,29 @@ class NeoAdeptApp:
                     self.load_table_info(db_name, inspector)
 
     def load_table_info(self, db_name, inspector):
-        sql_table_list, sql_table_dt_list = [], []
+        sql_table_list = []
         table_list = inspector.get_table_names()
         self.table_list[db_name] = table_list
         
         for table_name in table_list:
             columns = inspector.get_columns(table_name)
             columns_list = [{"name": col['name'], "datatype": col['type'].__visit_name__.lower(), "operators": self.operators.get(col['type'].__visit_name__.lower(), [])} for col in columns]
-            columns_dt_list = [{"name": col['name'], "datatype": col['type']} for col in columns]
-            
             sql_table_list.append({"name": table_name, "columns": columns_list, "description": table_name})
-            sql_table_dt_list.append({"name": table_name, "columns": columns_dt_list, "description": table_name})
         
         self.sql_table_list[db_name] = sql_table_list
-        self.sql_table_dt_list[db_name] = sql_table_dt_list
         
     def initialize_collections(self):
-        if Mongo_DB_Manager.is_collection_empty(self.db['MODULE_DETAILS']):
+        module_collection = self.db[COLLECTIONS.MASTER_MODULE_DETAILS]
+        if Mongo_DB_Manager.is_collection_empty(module_collection):
             Module_Permission(self.config.role_permission_file).load_module_details(self.db)
         
         self.app.module_details_map = self.load_module_details()
         
-        if self.config.CLIENT_ENV == 'client' and Mongo_DB_Manager.is_collection_empty(self.db['WIDGET']):
+        if self.config.CLIENT_ENV == CONSTANTS.CLIENT and Mongo_DB_Manager.is_collection_empty(self.db[COLLECTIONS.MASTER_WIDGET]):
             Menu_Widget(self.config.ui_template_file).load_widget_menu(self.db)
             key_generator(self.db)
         
-        if Mongo_DB_Manager.is_collection_empty(self.db['COLUMN_VISIBILITY']):
+        if Mongo_DB_Manager.is_collection_empty(module_collection):
             self.enable_collections_columns(self.keyset_map, self.db)
     
     def config_session(self,session_lifetime):
@@ -118,7 +116,7 @@ class NeoAdeptApp:
     
     def load_module_details(self):
         module_details_map = {}
-        module_details_collection = self.db["MODULE_DETAILS"]
+        module_details_collection = self.db[COLLECTIONS.MASTER_MODULE_DETAILS]
         modules = Mongo_DB_Manager.read_documents(module_details_collection,{})
         for module in modules:
             module_details_map[module["module"]] = module
@@ -126,15 +124,15 @@ class NeoAdeptApp:
 
     def load_keyset_mapping(self):
         keyset_map, keyset_map_index, filters, keyset_map_dt = {}, {}, {}, {}
-        collection_sample_list = Mongo_DB_Manager.read_documents(self.db["sample"],{})
+        collection_sample_list = Mongo_DB_Manager.read_documents(self.db[COLLECTIONS.CONFIG_SAMPLE],{})
         for collection_sample in collection_sample_list:
             if collection_sample:
                 collection_name = collection_sample.get("key")
                 keyset_map[collection_name] = DB_Utility.extract_all_keys_from_json(collection_sample)
                 keyset_map_index[collection_name] = DB_Utility.extract_all_keys_from_json_with_values(collection_sample)
                 keyset_map_dt[collection_name] = DB_Utility.extract_all_keys_from_json_with_dt(collection_sample)
-                if 'filters' in keyset_map_index[collection_name]:
-                    filters[collection_name] = keyset_map_index[collection_name].get('filters')
+                if CONSTANTS.FILTERS in keyset_map_index[collection_name]:
+                    filters[collection_name] = keyset_map_index[collection_name].get(CONSTANTS.FILTERS)
         return keyset_map,keyset_map_index,filters ,keyset_map_dt             
         
     def generate_log_file_path(self):
@@ -194,13 +192,13 @@ class NeoAdeptApp:
             return send_from_directory(BASE_PATH.joinpath('NeoAdept/static'), 'swagger.json')
     
     def register_blueprints(self):
-        versioned_prefix = f"/{self.config.version}"
+        versioned_prefix = f"/prod/{self.config.version}"
 
         common_args = (self.config, self.logger, self.db, self.keyset_map,self.session)
         routes_with_extra_args = [
             (Dropdown_Route, ( self.filters,)),
             (Dynamic_DB_Route, (self.keyset_map_dt, self.sql_db, self.sql_table_list)),
-            (Dynamic_widget_Route, (self.keyset_map_dt, self.sql_db)),
+            (Dynamic_widget_Route, (self.keyset_map_dt, self.sql_db))
         ]
 
         for route, extra_args in routes_with_extra_args:
@@ -209,7 +207,7 @@ class NeoAdeptApp:
             self.app.register_blueprint(blueprint, url_prefix=f"{versioned_prefix}/{route_name}")
         
         routes_without_extra_args = [
-            Client_Route, User_Route, Feedback_Route, UI_Template_Route,  
+            User_Route,Client_Route, Feedback_Route, UI_Template_Route,  
             My_List_Route, Activity_Route,  Common_Route, Email_Route, 
             Register_Route, Permission_Route
         ]
@@ -239,14 +237,14 @@ class NeoAdeptApp:
             return f"{self.app_name} {self.config.version} {self.config.app_version} is running"
         
     def  load_private_key(self,db) :   
-        key_document = db["CONFIG_KEYS"].find_one({"server_private_key": {"$exists": True}})
+        key_document = db[COLLECTIONS.CONFIG_KEYS].find_one({"server_private_key": {"$exists": True}})
         if key_document is None:
-            raise ValueError("Server private key not found in the database.")      
+            raise ValueError(f"Server private keys not found in the database{COLLECTIONS.CONFIG_KEYS}.")      
         
         server_private_key_pem = base64.b64decode(key_document["server_private_key"])    
         server_private_key = load_pem_private_key(server_private_key_pem, password=None)
-        decryption_apis = key_document.get("decryption_apis",None)       
-        return server_private_key,decryption_apis  
+        decryption_apis = key_document.get("decryption_apis",None)    
+        return server_private_key,decryption_apis 
     
 if __name__ == "__main__":
     NeoAdept_app = NeoAdeptApp('NeoAdept')

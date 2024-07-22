@@ -89,8 +89,9 @@ class SQL_Utility:
             session.close()
 
 class Collection_Manager:
-    def __init__(self,config:Config):
-        self.config = config
+    def __init__(self,config:Config=None):
+        if config:
+            self.config = config
         
     def connect_db(self,db_name):         
         db = self.configure_client(self.config.db_url,self.config.max_pool_size)[db_name]

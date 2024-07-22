@@ -8,6 +8,8 @@ from datetime import datetime
 from flask import Config, json,current_app
 from flask_jwt_extended import create_access_token,get_jwt
 
+from NeoAdept.utilities.collection_names import COLLECTIONS
+
 from ..gbo.common import Custom_Error
 
 from ..pojo.access_token import ACCESS_TOKEN
@@ -35,16 +37,13 @@ class Register_Service:
             self.mongo_client = MongoClient(self.config.db_url,maxPoolSize=self.config.max_pool_size)
             self.neo_db =  self.mongo_client[self.config.neo_db]
             self.email_service = Email_Service(config,keyset_map,logger,db)
-            self.registration_collection = "REGISTRATION_DETAILS"  
-            self.html_collection = "HTML_TAGS"
             self.SENDPULSE_API_KEY = self.config.sendpulse_api_key
             self.SENDPULSE_API_SECRET = self.config.sendpulse_api_secret
             self.SENDPULSE_TOKEN_URL = self.config.sendpulse_token_url
             self.SENDPULSE_EMAIL_URL = self.config.sendpulse_email_url
             self.key_nested_key_map = keyset_map
-            if "REGISTRATION_DETAILS" in keyset_map:
-                self.key_map = self.key_nested_key_map["REGISTRATION_DETAILS"]
-            self.common_service = Common_Service(logger,db,keyset_map)
+            self.key_map = self.key_nested_key_map[COLLECTIONS.ATS_REGISTRATION_DETAILS]
+            #self.common_service = Common_Service(logger,db,keyset_map)
             
         
     def register_client(self,data): 
@@ -66,7 +65,7 @@ class Register_Service:
                 {'company': data_obj.company, 'status': 'Pending'}
             ]
         }
-        existing_clients = Mongo_DB_Manager.read_documents(self.neo_db[self.registration_collection],query)
+        existing_clients = Mongo_DB_Manager.read_documents(self.neo_db[COLLECTIONS.ATS_REGISTRATION_DETAILS],query)
         for existing_client in existing_clients:
             if existing_client:
                 raise Custom_Error('A client with the same name, email, phone, or company already exists in the collection with status Pending')    
@@ -92,11 +91,11 @@ class Register_Service:
         data_obj.comments = 'Email is sent to company'
         attributes_to_delete = ["updated_by","updated_on","_id"]
         data_obj = DB_Utility.delete_attributes_from_obj(data_obj,attributes_to_delete)
-        result = Mongo_DB_Manager.create_document(self.neo_db[self.registration_collection],data_obj.__dict__)
+        result = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.ATS_REGISTRATION_DETAILS],data_obj.__dict__)
              
     def get_html_tag(self,key):
         query = {"key": key}
-        result = Mongo_DB_Manager.read_one_document(self.db[self.html_collection],query)
+        result = Mongo_DB_Manager.read_one_document(self.db[COLLECTIONS.CONFIG_HTML_TAGS],query)
         if not result:
             return None
         return result["html_tag"] if result["html_tag"] else None
@@ -111,14 +110,14 @@ class Register_Service:
         
         pagination = Pagination(**request_data) 
         
-        self.common_service.create_log_details(identity_data_obj.email,request_data,"get_registration_details",db)
+        ##self.common_service.create_log_details(identity_data_obj.email,request_data,"get_registration_details",db)
                
         query = DB_Utility.frame_get_query(pagination,self.key_map)
            
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.registration_collection],query,pagination) 
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.ATS_REGISTRATION_DETAILS],query,pagination) 
 
         if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(db[self.registration_collection],query)
+            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.ATS_REGISTRATION_DETAILS],query)
             if pagination.is_download==True:
                 return docs,count
             return DB_Utility.convert_doc_to_cls_obj(docs,REGISTRATION_DETAILS),count
@@ -138,7 +137,7 @@ class Register_Service:
         data_obj = REGISTRATION_DETAILS(**request_data)
         _id = DB_Utility.str_to_obj_id(data_obj._id)  
         query = {"_id": _id}
-        cursor = Mongo_DB_Manager.read_one_document(db[self.registration_collection],query)
+        cursor = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_REGISTRATION_DETAILS],query)
         if not cursor:
             raise Custom_Error('client registration info not found for this _id')
         DB_Utility.remove_extra_attributes(data_obj.__dict__,request_data)
@@ -147,9 +146,9 @@ class Register_Service:
         data_obj.updated_on = Utility.get_current_time()
         data_obj.updated_by = email_from_token
         
-        result = Mongo_DB_Manager.update_document(db[self.registration_collection], query, data_obj.__dict__)
+        result = Mongo_DB_Manager.update_document(db[COLLECTIONS.ATS_REGISTRATION_DETAILS], query, data_obj.__dict__)
         if result == 0:
             raise Custom_Error('Could not update client registration info')  
 
-        data = Mongo_DB_Manager.read_one_document(db[self.registration_collection],query)
+        data = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.ATS_REGISTRATION_DETAILS],query)
         return DB_Utility.convert_obj_id_to_str_id(data)

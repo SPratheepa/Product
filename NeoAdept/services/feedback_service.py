@@ -3,6 +3,7 @@ from uuid import uuid4
 from werkzeug.utils import secure_filename
 
 from NeoAdept.services.common_service import Common_Service
+from NeoAdept.utilities.collection_names import COLLECTIONS
 
 from ..pojo.access_token import ACCESS_TOKEN
 from ..config import Config
@@ -27,11 +28,9 @@ class Feedback_Service():
         
         if not hasattr(self, 'initialized'):
             self.logger = logger
-            self.feedback_collection = "FEEDBACK_DETAILS"
-            #self.feedback_collection = db["FEEDBACK_DETAILS"]
             self.attachment_path = config.attachment_path
             self.key_nested_key_map = keyset_map
-            self.common_service = Common_Service(logger,db,keyset_map)
+            #self.common_service = Common_Service(logger,db,keyset_map)
 
     def save_feedback_details(self, feedback_data, identity_data,db):
         identity_data_obj = ACCESS_TOKEN(**identity_data)
@@ -48,7 +47,7 @@ class Feedback_Service():
         common_fields = Common_Fields(created_by=email_from_token, created_on=Utility.get_current_timestamp())
         feedback_data.update(common_fields.__dict__)
 
-        inserted_id = Mongo_DB_Manager.create_document(db[self.feedback_collection], feedback_data)
+        inserted_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS], feedback_data)
         if inserted_id is None:
             raise Custom_Error("Failed to save feedback details")
      
@@ -82,7 +81,7 @@ class Feedback_Service():
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
         
-        self.common_service.create_log_details(email_from_token,request_data,"get_feedback_list",db)
+        #self.common_service.create_log_details(email_from_token,request_data,"get_feedback_list",db)
         
         if role_from_token == CONSTANTS.PRODUCT_ADMIN:
             return self.perform_pagination(request_data,db)
@@ -100,13 +99,11 @@ class Feedback_Service():
         pagination = Pagination(**request)
         query = {}
         if pagination.filter_by:
-                updated_filter_by = Utility.update_filter_keys(pagination.filter_by,self.key_nested_key_map["FEEDBACK_DETAILS"])
+                updated_filter_by = Utility.update_filter_keys(pagination.filter_by,self.key_nested_key_map[COLLECTIONS.MASTER_FEEDBACK_DETAILS])
                 query = DB_Utility.build_filtered_data_query(updated_filter_by)        
         
-        docs,count = Mongo_DB_Manager.get_paginated_data1(db[self.feedback_collection],query,pagination)
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS],query,pagination)
         if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(db[self.feedback_collection], query)
+            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS], query)
             return DB_Utility.convert_doc_to_cls_obj(docs,FEEDBACK_DETAILS),count
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
-    
-    

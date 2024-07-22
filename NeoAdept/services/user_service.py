@@ -5,6 +5,8 @@ import bcrypt
 
 from pymongo import MongoClient
 from flask import json, Config
+
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from ..gbo.bo import Pagination
 from ..gbo.common import Custom_Error
 from ..pojo.user_details import USER_DETAILS
@@ -29,15 +31,12 @@ class User_Service:
             self.logger = logger
             self.config = config
             self.db = db
-            self.user_details_collection = "USER_DETAILS"
-            self.attachment_details = "ATTACHMENT_DETAILS"
             self.mongo_client = MongoClient(self.config.db_url,maxPoolSize=self.config.max_pool_size)
-            self.client_collection = self.mongo_client[self.config.neo_db]["CLIENT_DETAILS"]
+            self.client_collection = self.mongo_client[self.config.neo_db][COLLECTIONS.MASTER_CLIENT_DETAILS]
             self.key_nested_key_map = keyset_map
-            if "USER_DETAILS" in keyset_map:
-                self.key_map = self.key_nested_key_map["USER_DETAILS"]
+            self.key_map = self.key_nested_key_map[COLLECTIONS.MASTER_USER_DETAILS]
             self.directory = DIRECTORY()
-            self.common_service = Common_Service(logger,db,keyset_map)
+            #self.common_service = Common_Service(logger,db,keyset_map)
         
     def get_user_collection_by_client_id(self,client_id):
         query =  {"_id": DB_Utility.str_to_obj_id(client_id)}
@@ -46,10 +45,10 @@ class User_Service:
         user_client_obj = CLIENT_DETAILS(**user_client)
            
         if user_client_obj.client_name == CONSTANTS.NEO_CV:
-            user_collection = self.mongo_client[self.config.neo_db][self.user_details_collection]
+            user_collection = self.mongo_client[self.config.neo_db][COLLECTIONS.MASTER_USER_DETAILS]
         else:
             db_name = user_client_obj.db_name
-            user_collection = self.mongo_client[db_name][self.user_details_collection]
+            user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
         return user_collection
     
     def get_client_name_by_id(self, client_id):
@@ -83,7 +82,7 @@ class User_Service:
             if user_data_obj.role != CONSTANTS.USER:
                 raise Custom_Error(CONSTANTS.ADD_USER_ERR1)
             
-        user_collection = db[self.user_details_collection]              
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]              
         
         query =  {"email": user_data_obj.email,**Utility.get_delete_false_query()}
         existing_user = Mongo_DB_Manager.read_one_document(user_collection, query)
@@ -144,7 +143,7 @@ class User_Service:
             if user_data_obj.role != CONSTANTS.USER:
                 raise Custom_Error(CONSTANTS.UPDATE_USER_ERR1)
             
-        user_collection = db[self.user_details_collection]   
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]   
         
         _id = DB_Utility.str_to_obj_id(user_data_obj._id)
         list_of_keys = ["email","phone"]
@@ -189,7 +188,7 @@ class User_Service:
         if role_from_token == CONSTANTS.USER:
             raise Custom_Error(CONSTANTS.DELETE_USER_ERR)  
             
-        user_collection = db[self.user_details_collection]
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
             
         existing_user = Mongo_DB_Manager.read_one_document(user_collection,query)
         
@@ -232,9 +231,9 @@ class User_Service:
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
         pagination = Pagination(**request_data) 
-        self.common_service.create_log_details(email_from_token,request_data,"get_user_list",db)
+        ##self.common_service.create_log_details(email_from_token,request_data,"get_user_list",db)
         client_db_name = identity_data_obj.client_db_name
-        user_collection = db[self.user_details_collection]
+        user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
         if role_from_token == CONSTANTS.USER or (role_from_token == CONSTANTS.PRODUCT_USER and (client_db_name is None or client_db_name == self.config.neo_db)):
             result = self.get_user_by_email(user_collection,email_from_token,db)
             if result:
@@ -273,7 +272,7 @@ class User_Service:
                 
                 
         if new_docs and len(new_docs)>0:
-            Mongo_DB_Manager.attachment_details(db["ATTACHMENT_DETAILS"],new_docs,["photo"])
+            Mongo_DB_Manager.attachment_details(db[COLLECTIONS.MASTER_ATTACHMENT_DETAILS],new_docs,["photo"])
             #count = Mongo_DB_Manager.count_documents(user_collection,query)
             if pagination.is_download==True:
                 return new_docs,count
@@ -292,7 +291,7 @@ class User_Service:
         if 'updated_on' in user_document and isinstance(user_document['updated_on'], datetime):
             user_document['updated_on'] = user_document['updated_on'].strftime("%Y-%m-%d %H:%M:%S.%f")
 
-        Mongo_DB_Manager.attachment_details(db["ATTACHMENT_DETAILS"],[user_document],["photo"])     
+        Mongo_DB_Manager.attachment_details(db[COLLECTIONS.MASTER_ATTACHMENT_DETAILS],[user_document],["photo"])     
         
         return user_document
         
@@ -351,7 +350,7 @@ class User_Service:
                 if client_db_name is not None and client_db_name != self.config.neo_db:
                     doc.client_id = self.get_client_id_by_db(identity_data_obj.client_db_name)
                     
-            user_collection = db[self.user_details_collection]
+            user_collection = db[COLLECTIONS.MASTER_USER_DETAILS]
                         
             if self.check_duplicate_value_for_user(doc,index, result_dict,user_collection):
                 continue                
