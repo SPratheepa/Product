@@ -87,7 +87,7 @@ class NeoAdeptApp:
         for table_name in table_list:
             columns = inspector.get_columns(table_name)
             columns_list = [{"name": col['name'], "datatype": col['type'].__visit_name__.lower(), "operators": self.operators.get(col['type'].__visit_name__.lower(), [])} for col in columns]
-            sql_table_list.append({"name": table_name, "columns": columns_list, "description": table_name})
+            sql_table_list.append({"collection_name": table_name, "columns": columns_list, "description": table_name})
         
         self.sql_table_list[db_name] = sql_table_list
         

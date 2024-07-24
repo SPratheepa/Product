@@ -9,7 +9,7 @@ from ..gbo.bo import Pagination
 from ..gbo.common import Custom_Error
 from ..pojo.access_token import ACCESS_TOKEN
 from ..pojo.client_details import CLIENT_DETAILS
-from ..requests.client_request import create_client_request,create_client_subscription_request,update_client_request,delete_client_request,upload_client_request
+from ..requests.client_request import create_client_request,create_client_subscription_request,update_client_request,delete_client_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
 from ..utilities.db_utility import Collection_Manager, DB_Utility, Mongo_DB_Manager
@@ -61,16 +61,14 @@ class Client_Service:
         client_data_obj = DB_Utility.delete_attributes_from_obj(client_data_obj,attributes_to_delete)
         
         client_id = Mongo_DB_Manager.create_document(client_collection,client_data_obj.__dict__)
-        client_data_obj.db_name = DB_Utility.obj_id_to_str(client_id)
-
-        # Update the db_name in the client_details_collection
-        update_values = {"db_name": client_data_obj.db_name}
-        update_db = Mongo_DB_Manager.update_document(client_collection, {"_id": client_id}, update_values)
-    
-        Thread(target=self.create_client_database, args=(client_data_obj.db_name, db)).start()
         
         if not client_id:
             raise Custom_Error(CONSTANTS.ADD_CLIENT_ERR_MSG2)
+        
+        db_name = DB_Utility.obj_id_to_str(client_id)
+        update_db = Mongo_DB_Manager.update_document(client_collection, {"_id": client_id}, {"db_name":db_name})
+    
+        Thread(target=self.create_client_database, args=(db_name, db)).start()
         
     def create_client_database(self, db_name, main_db):
         client_db = self.mongo_client[db_name]
@@ -162,7 +160,7 @@ class Client_Service:
         
         client_info = Mongo_DB_Manager.read_one_document(client_collection, {"_id": _id})
         if client_info and client_info["client_name"] == CONSTANTS.NEO_CV:
-            raise Custom_Error("Client update not allowed for NeoCV")              
+            raise Custom_Error(f"Client update not allowed for {CONSTANTS.NEO_CV}")              
 
         list_of_keys = ["api_url","domain","client_name"]
         query = DB_Utility.update_keys_check(client_data_obj,list_of_keys,_id)
@@ -175,7 +173,7 @@ class Client_Service:
         
         for existing_client in list(existing_clients):
             if existing_client["_id"] != _id:
-                raise Custom_Error('client_name or api_url or domain already exists for other documents')
+                raise Custom_Error('Client_name or api_url or domain already exists for other documents')
             
         client_data_obj.updated_on, client_data_obj.updated_by = Utility.settings_for_data_operation(email_from_token, CONSTANTS.UPDATE)
         attributes_to_delete = ["created_by","created_on","_id","subscription_details","db_name"]
@@ -253,21 +251,9 @@ class Client_Service:
         pagination = Pagination(**request_data)        
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_CLIENT_DETAILS],query,pagination)
-        
-        if pagination.is_download==True:
+        if count > 0:
+            if pagination.is_download==True:
                 return docs,count
-            
-        new_docs=[]
-        for doc in docs:
-            if 'created_on' in doc and isinstance(doc['created_on'], datetime):
-                doc['created_on'] = doc['created_on'].strftime("%Y-%m-%d %H:%M:%S.%f")
-            if 'updated_on' in doc and isinstance(doc['updated_on'], datetime):
-                doc['updated_on'] = doc['updated_on'].strftime("%Y-%m-%d %H:%M:%S.%f")
-            docs_obj = CLIENT_DETAILS(**doc)
-            docs_obj._id = DB_Utility.obj_id_to_str(docs_obj._id)           
-            new_docs.append(docs_obj.__dict__)
-                
-        if new_docs and len(new_docs)>0:
-            return new_docs,count
+            return DB_Utility.convert_doc_to_cls_obj(docs,CLIENT_DETAILS),count
         
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND)  

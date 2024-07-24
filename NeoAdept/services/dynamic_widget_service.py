@@ -1,23 +1,20 @@
-import json
-import logging
 from flask import jsonify
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Table, and_, or_
-from NeoAdept.pojo.dynamic_widget import DYNAMIC_WIDGET
-from NeoAdept.pojo.access_token import ACCESS_TOKEN
-from NeoAdept.pojo.user_details import USER_DETAILS
-from NeoAdept.services.common_service import Common_Service
-import pymongo
-from NeoAdept.gbo.bo import Base_Response, Pagination
-from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.requests.dynamic_widget_request import create_dynamic_widget_request, delete_dynamic_widget_request, update_dynamic_widget_request
-from NeoAdept.utilities.collection_names import COLLECTIONS
-from NeoAdept.utilities.constants import CONSTANTS
-from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
-from NeoAdept.utilities.utility import Utility
 
+from ..pojo.dynamic_widget import DYNAMIC_WIDGET
+from ..pojo.access_token import ACCESS_TOKEN
+from ..pojo.user_details import USER_DETAILS
+from ..services.common_service import Common_Service
 
+from ..gbo.bo import Base_Response, Pagination
+from ..gbo.common import Custom_Error
+from ..requests.dynamic_widget_request import create_dynamic_widget_request, delete_dynamic_widget_request, update_dynamic_widget_request
+from ..utilities.collection_names import COLLECTIONS
+from ..utilities.constants import CONSTANTS
+from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
+from ..utilities.utility import Utility
 class Dynamic_widget_Service:
-     
+    
     _instance = None  # Class variable to store the singleton instance
     
     def __new__(cls, *args, **kwargs):
@@ -46,104 +43,74 @@ class Dynamic_widget_Service:
         self.key_map = self.keyset_map[COLLECTIONS.MASTER_DYNAMIC_WIDGET ]
         self.session = session
         self.sql_db = sql_db
- 
+
     def get_dynamic_widget(self,identity_data,request_data,db):
-
         identity_data_obj = ACCESS_TOKEN(**identity_data)
-        
         pagination = Pagination(**request_data)
-    
         #self.common_service.create_log_details(identity_data_obj.email,request_data,"get_dynamic_widget",db)
-        
-        dynamic_widget_collection = db[COLLECTIONS.MASTER_DYNAMIC_WIDGET]
-        
         query = DB_Utility.frame_get_query(pagination,self.key_map)
-        
-        docs,count = Mongo_DB_Manager.get_paginated_data1(dynamic_widget_collection,query,pagination) 
-
-        if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(dynamic_widget_collection,query)
+        docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query,pagination) 
+        if count > 0:
             if pagination.is_download==True:
                 return docs,count
             return DB_Utility.convert_doc_to_cls_obj(docs,DYNAMIC_WIDGET),count
-        
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND) 
     
     def update_dynamic_widget(self,dynamic_widget_data,db,email_from_token):
-        
         dynamic_widget_request = update_dynamic_widget_request(dynamic_widget_data) 
         dynamic_widget_request.parse_request()
         dynamic_widget_request.validate_request()
         
         dynamic_widget_data_obj = DYNAMIC_WIDGET(**dynamic_widget_data)
-        
-               
         _id = DB_Utility.str_to_obj_id(dynamic_widget_data_obj._id)
         
-        flag = 0
-        list_of_keys = []
-        if getattr(dynamic_widget_data_obj, 'name', None):
-            list_of_keys.append("name")
-            flag = 1
+        list_of_keys = [key for key in ['name'] if getattr(dynamic_widget_data_obj, key, None)]
+        query = {"_id": _id} if not list_of_keys else DB_Utility.update_keys_check(dynamic_widget_data_obj, list_of_keys, _id)
+    
+        existing_dynamic_widgets = list(Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query))
         
-            
-        if flag == 0:
-            query = {"_id": _id}
-        else:
-            query = DB_Utility.update_keys_check(dynamic_widget_data_obj,list_of_keys,_id)
-            
-        cursor = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)
-        existing_dynamic_widgets = list(cursor)
-                 
-        if _id not in [dynamic_widget['_id'] for dynamic_widget in existing_dynamic_widgets]:
+        if not any(widget['_id'] == _id for widget in existing_dynamic_widgets):
             raise Custom_Error('Dynamic widget not found')
         
-        for existing_dynamic_widget in list(existing_dynamic_widgets):
-            if existing_dynamic_widget["_id"] != _id:
+        for widget in existing_dynamic_widgets:
+            if widget["_id"] != _id:
                 raise Custom_Error('name already exists for other documents')
-            existing_doc = existing_dynamic_widget
             
-        query_information = dynamic_widget_data_obj.query_information
-        if query_information:
+        if "query_information" in dynamic_widget_data:
+            query_information = dynamic_widget_data['query_information']
             collection_name = query_information.get("conditions")[0].get("table")
-            is_mongo_db = True
-            if "db_type" in dynamic_widget_data and dynamic_widget_data["db_type"]=='SQL':
-                is_mongo_db = False
-            self.validate_query_information(query_information, collection_name,is_mongo_db)
-
-        DB_Utility.remove_extra_attributes(dynamic_widget_data_obj.__dict__,dynamic_widget_data)
-        del dynamic_widget_data_obj._id        
+            is_mongo_db = dynamic_widget_data.get("db_type") != CONSTANTS.SQL
+            self.validate_query_information(query_information, collection_name, is_mongo_db)
         
         dynamic_widget_data_obj.updated_on = Utility.get_current_time()
         dynamic_widget_data_obj.updated_by = email_from_token
+        dynamic_widget_update_data = dynamic_widget_data_obj.__dict__
+        DB_Utility.remove_extra_attributes(dynamic_widget_update_data,dynamic_widget_data)
+        del dynamic_widget_data_obj._id  
                 
-        query =  {"_id": _id}  
-        result = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query, dynamic_widget_data_obj.__dict__)
+        result = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], {"_id": _id}, dynamic_widget_update_data)
         if result == 0:
             raise Custom_Error('Could not update dynamic widget')  
 
         data = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)
-        
         return DB_Utility.convert_obj_id_to_str_id(data)
             
     def save_dynamic_widget(self,dynamic_widget_data,db,email_from_token):
-
         dynamic_widget_request = create_dynamic_widget_request(dynamic_widget_data) 
         dynamic_widget_request.parse_request()
         dynamic_widget_request.validate_request()
 
         dynamic_widget_obj_details = dynamic_widget_request.dynamic_widget_obj
-
         query_information = dynamic_widget_data.get("query_information")
         collection_name = query_information.get("conditions")[0].get("table")
-        is_mongo_db = True
-        if "db_type" in dynamic_widget_data and dynamic_widget_data["db_type"]=='SQL':
-            is_mongo_db = False
+        is_mongo_db = dynamic_widget_data.get("db_type") != CONSTANTS.SQL
+        
         self.validate_query_information(query_information, collection_name,is_mongo_db)
             
         fields_to_check = ["name"]
         query = DB_Utility.fields_to_check(dynamic_widget_obj_details,fields_to_check)
         existing_widget = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET], query)
+        
         if existing_widget:
             field = next((field for field in fields_to_check if getattr(dynamic_widget_obj_details, field) == existing_widget[field]), None)
             if field:
@@ -151,12 +118,12 @@ class Dynamic_widget_Service:
             
         dynamic_widget_obj_details = Utility.upsert_by_on(dynamic_widget_obj_details,"add",email_from_token)         
         dynamic_widget_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],dynamic_widget_obj_details.__dict__) 
+        
         if not dynamic_widget_id:
             raise Custom_Error('Could not add dynamic_widget')
         
         data = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_DYNAMIC_WIDGET],query)       
         return DB_Utility.convert_obj_id_to_str_id(data)
-        
         
     def validate_query_information(self, query_information, collection_name,is_mongo_db=True):
         conditions = query_information.get("conditions", [])
@@ -169,9 +136,11 @@ class Dynamic_widget_Service:
 
             if condition['table'] != collection_name:
                 raise Custom_Error("Collection names should be same.")
-        rules = query_information.get("rules", [])
-        if rules and is_mongo_db:
-            self.validate_and_process_rules(rules, collection_name)      
+        if is_mongo_db:
+            rules = query_information.get("rules", [])
+        
+            if rules:
+                self.validate_and_process_rules(rules, collection_name) 
         
     def validate_and_process_rules(self, rules, collection_name):
         keyset_map_dt = self.keyset_map_dt[collection_name]

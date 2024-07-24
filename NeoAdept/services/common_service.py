@@ -73,7 +73,7 @@ class Common_Service:
             attachment_list.append(attachment_data)
         
         if not attachment_list:
-            raise Custom_Error(CONSTANTS.CRDTS_ERR)
+            raise Custom_Error(CONSTANTS.INVALID_INPUT)
         
         inserted_ids = Mongo_DB_Manager.create_documents(db[COLLECTIONS.MASTER_ATTACHMENT_DETAILS],attachment_list)
         if inserted_ids is None:

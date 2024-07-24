@@ -128,7 +128,7 @@ class Common_Service:
                 raise Custom_Error('Could not add attachment info to collection')
             
         if not attachment_list:
-            raise Custom_Error(CONSTANTS.CRDTS_ERR)
+            raise Custom_Error(CONSTANTS.INVALID_INPUT)
         attachments = DB_Utility.convert_object_ids_to_strings(attachment_list)
         return attachments
         

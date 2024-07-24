@@ -93,7 +93,7 @@ class Activity_Service:
         activity_collection = db[COLLECTIONS.MASTER_ACTIVITY_DETAILS]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         docs,count = Mongo_DB_Manager.get_paginated_data1(activity_collection,query,pagination) 
-        if docs and len(docs)>0:
+        if count > 0:
             if pagination.is_download==True:
                 return docs,count
             return DB_Utility.convert_doc_to_cls_obj(docs,ACTIVITY_DETAILS),count

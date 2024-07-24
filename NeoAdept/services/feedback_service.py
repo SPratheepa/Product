@@ -40,8 +40,8 @@ class Feedback_Service():
         feedback_data_request.validate_request() 
 
         for attachment in feedback_data_request.feedback_details_obj.attachment: #notes:it is dic , change to object
-           file_type=Utility.get_file_type(attachment.get("file_name"))
-           attachment['file_type'] = file_type
+            file_type=Utility.get_file_type(attachment.get("file_name"))
+            attachment['file_type'] = file_type
         
         feedback_data['client_name'] = identity_data_obj.client_name
         common_fields = Common_Fields(created_by=email_from_token, created_on=Utility.get_current_timestamp())
@@ -50,7 +50,7 @@ class Feedback_Service():
         inserted_id = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS], feedback_data)
         if inserted_id is None:
             raise Custom_Error("Failed to save feedback details")
-     
+    
     def upload_attachment(self, files):
         attachments = []
         path_dir = os.path.dirname(__file__)
@@ -70,9 +70,9 @@ class Feedback_Service():
             attachments.append({"id": id , "file_name":filename, "file_location_path":location_path})
         
         if not attachments:
-           raise Custom_Error(CONSTANTS.CRDTS_ERR)
+            raise Custom_Error(CONSTANTS.INVALID_INPUT)
         return attachments
-     
+    
     def get_feedback_list(self, request_data , identity_data,db):
         filter_by = request_data.get('filter_by', [])
         request_data['filter_by'] = [f for f in filter_by if 'client_id' and 'is_deleted' not in f]

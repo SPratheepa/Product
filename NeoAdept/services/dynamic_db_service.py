@@ -1,13 +1,8 @@
-import pymongo
-from NeoAdept.gbo.bo import Base_Response, Pagination
-from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.pojo.access_token import ACCESS_TOKEN
-from NeoAdept.utilities.collection_names import COLLECTIONS
-from NeoAdept.utilities.constants import CONSTANTS
-from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
-from NeoAdept.utilities.utility import Utility
-
-
+from ..gbo.bo import Base_Response
+from ..gbo.common import Custom_Error
+from ..utilities.collection_names import COLLECTIONS
+from ..utilities.constants import CONSTANTS
+from ..utilities.db_utility import  Mongo_DB_Manager
 class Dynamic_DB_Service:
     _instance = None  
     
@@ -17,7 +12,7 @@ class Dynamic_DB_Service:
             return cls._instance
         return cls._instance
     
-    def __init__(self,logger,db,keyset_map_dt,sql_db,sql_table_list,session):
+    def __init__(self,logger,keyset_map_dt,sql_table_list,session):
         if not hasattr(self, 'initialized'):
             self.logger = logger
             self.keyset_map_dt = keyset_map_dt
@@ -37,59 +32,28 @@ class Dynamic_DB_Service:
                 "bool": [True, False],
                 "default": []
             }
+            self.initialized = True
     
     def get_collection_list(self, request_data, db):
-        page = int(request_data.get("page", 1))  
-        per_page = int(request_data.get("per_page", 10))  
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
-        filter_by = request_data.get("filter_by", [])
-
-        #identity_data_obj = ACCESS_TOKEN(**identity_data)
-        #widget_enable_for_db = identity_data_obj.widget_enable_for_db
         if self.session.widget_enable_for_db is None:
             return Base_Response(status=CONSTANTS.FAILED, status_code=403, message="Session expired.Please log in again").__dict__
-            #return Utility.generate_error_response("Session expired.Please log in again")
-        
+            
         widget_enable_for_db = self.session.widget_enable_for_db
-        
         sample_docs = Mongo_DB_Manager.read_documents(db[COLLECTIONS.CONFIG_sample],{"key": {"$exists": True}})
         sample_map = {doc['key']: doc['collection_description'] for doc in sample_docs}
         
-        collections = []
-        for collection_name, collection_info in widget_enable_for_db.items():
-            if collection_info.get("widget_enable"):
-                columns = collection_info.get("columns", [])
-                columns_dict = {col["db_column"]: col.get("widget_enable", True) for col in columns}
-                collection_description = sample_map.get(collection_name, "No description available")
-                collections.append({"name": collection_name, "columns": columns_dict, "description": collection_description})
+        collections = [
+            {
+                "name": collection_name,
+                "columns": {col["db_column"]: col.get("widget_enable", True) for col in collection_info.get("columns", [])},
+                "description": sample_map.get(collection_name, "No description available")
+            }
+            for collection_name, collection_info in widget_enable_for_db.items()
+            if collection_info.get("widget_enable")
+        ]
     
-        if sort_by == "collection_name":
-            if order_by == "asc":
-                collections.sort(key=lambda x: x["name"])
-            elif order_by == "desc":
-                collections.sort(key=lambda x: x["name"], reverse=True)
-            else:
-                raise Custom_Error("Invalid value for 'order_by'")
-        
-        if filter_by:
-            filtered_collections = []
-            filter_collection_names = [item["collection_name"] for item in filter_by]
-            for inner_list in filter_collection_names:
-                for collection_name in inner_list:
-                    for collection in collections:
-                        if collection_name == collection['name']:
-                            filtered_collections.append(collection)
-            collections = filtered_collections
-    
-        if not request_data:  # If request_data is empty, skip pagination
-            paginated_collections = collections
-        else:
-            start_index = (page - 1) * per_page
-            end_index = start_index + per_page
-            paginated_collections = collections[start_index:end_index]
-    
-        count = len(collections)
+        collections = self._sort_and_filter_collections(collections, request_data.get("sort_by"), request_data.get("order_by"), request_data.get("filter_by"))
+        paginated_collections, count = self._paginate_collections(collections, request_data.get("page"), request_data.get("per_page"))
     
         # Format the data to include columns
         formatted_collections = []
@@ -122,101 +86,29 @@ class Dynamic_DB_Service:
                 "columns": formatted_columns,
                 "description": collection['description']
             })
-    
         return formatted_collections, count
-    
-    def get_collection_columns(self, collection):
-        
-        columns = {}
-        for key in collection.find_one().keys():
-            columns[key] = "string"  
-        return columns
-    
-    def get_collection_list1(self,request_data,db,identity_data):
-        page = int(request_data.get("page", 1))  
-        per_page = int(request_data.get("per_page", 10))  
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
 
-        collection_names = db.list_collection_names()
-
-        if sort_by == "collections":
-            if order_by == "asc":
-                collection_names.sort()  
-            elif order_by == "desc":
-                collection_names.sort(reverse=True)  
-            else:
-                raise Custom_Error("Invalid value for 'order_by'")
-
-        start_index = (page - 1) * per_page
-        end_index = start_index + per_page
-
-        paginated_collection_names = collection_names[start_index:end_index]
-        count = len(collection_names)
-        return paginated_collection_names,count
-
-    def get_attribute_list(self, request_data, db):
-        print("Entering get_attribute_list")
-        page = int(request_data.get("page", 1))
-        per_page = int(request_data.get("per_page", 10))
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
-        filter_by = request_data.get("filter_by", [])
-
-        filter_by = request_data.get('filter_by', [])
-        collection_names = []
-        for filter_item in filter_by:
-            if 'collection' in filter_item:
-                collection_names.extend(filter_item['collection'])
-
-        for collection_name in collection_names:
-            if collection_name in self.keyset_map_dt:
-                attributes = list(self.keyset_map_dt[collection_name].keys())
-
-                if sort_by == "attributes":
-                    if order_by == "asc":
-                        attributes.sort()  
-                    elif order_by == "desc":
-                        attributes.sort(reverse=True)  
-                    else:
-                        raise Custom_Error("Invalid value for 'order_by'")
-                start_index = (page - 1) * per_page
-                end_index = start_index + per_page
-                paginated_attribute_names = attributes[start_index:end_index]
-                count = len(attributes)
-                return paginated_attribute_names,count
-
-    def get_sql_table_list(self,identity_data,request_data):
-        page = int(request_data.get("page", 1))  
-        per_page = int(request_data.get("per_page", 10))  
-        sort_by = request_data.get("sort_by")
-        order_by = request_data.get("order_by")
-        filter_by = request_data.get("filter_by", [])
+    def get_sql_table_list(self,identity_data,request_data):        
         sql_table_list = self.sql_table_list[request_data.get("db_name")]
+        sql_table_list = self._sort_and_filter_collections(sql_table_list, request_data.get("sort_by"), request_data.get("order_by"), request_data.get("filter_by"))
+        return self._paginate_collections(sql_table_list, request_data.get("page"), request_data.get("per_page"))
+    
+    def _sort_and_filter_collections(self, collections, sort_by, order_by, filter_by):
         if sort_by == "collection_name":
-            if order_by == "asc":
-                sql_table_list.sort(key=lambda x: x["name"])
-            elif order_by == "desc":
-                sql_table_list.sort(key=lambda x: x["name"], reverse=True)
-            else:
+            reverse = order_by == "desc"
+            if order_by not in ["asc", "desc"]:
                 raise Custom_Error("Invalid value for 'order_by'")
-        collections = sql_table_list
+            collections.sort(key=lambda x: x["name"], reverse=reverse)
+
         if filter_by:
-            filtered_collections = []
-            filter_collection_names = [item["collection_name"] for item in filter_by]
-            for inner_list in filter_collection_names:
-                for collection_name in inner_list:
-                    for collection in collections:
-                        if collection_name == collection['name']:
-                            filtered_collections.append(collection)
-            collections = filtered_collections
+            filter_collection_names = {item["collection_name"] for item in filter_by}
+            collections = [collection for collection in collections if collection['name'] in filter_collection_names]
+        return collections
     
-        if not request_data:  # If request_data is empty, skip pagination
-            paginated_collections = collections
-        else:
-            start_index = (page - 1) * per_page
-            end_index = start_index + per_page
+    def _paginate_collections(self, collections, page, per_page):  
+        if page and per_page:
+            start_index = (int(page) - 1) * int(per_page)
+            end_index = start_index + int(per_page)
             paginated_collections = collections[start_index:end_index]
-    
-        count = len(collections)    
-        return paginated_collections, count
+            return paginated_collections, len(collections)
+        return collections, len(collections)
