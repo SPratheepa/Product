@@ -1,13 +1,11 @@
 ﻿import random,string,bcrypt
-from NeoAdept.services.common_service import Common_Service
-from NeoAdept import config
 
 from datetime import datetime
-from flask import Config, json,current_app,session
+from flask import Config, json,current_app
 from flask_jwt_extended import create_access_token,get_jwt
+from pymongo import MongoClient
 
-from NeoAdept.utilities.collection_names import COLLECTIONS
-
+from ..utilities.collection_names import COLLECTIONS
 from ..gbo.bo import Common_Fields
 from ..gbo.common import Custom_Error
 from ..pojo.user_details import USER_DETAILS
@@ -19,8 +17,6 @@ from ..services.ui_template_service_temp import UI_Template_Service_temp
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
-from pymongo import MongoClient
-
 
 class Login_Service:
     _instance = None  # Class variable to store the singleton instance
@@ -47,59 +43,51 @@ class Login_Service:
             
         
     def create_product_admin(self,request_data):
-        
         create_prod_admin_request = create_product_admin_request(request_data) 
         create_prod_admin_request.parse_request()
         create_prod_admin_request.validate_request()
         
         login_details_obj = create_prod_admin_request.login_details_obj
-        query = {**{"email": login_details_obj.email}, **Utility.get_active_and_not_deleted_query()}
-        current_user = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS], query)
+        query = {"email": login_details_obj.email, **Utility.get_active_and_not_deleted_query()}
         
-        if not current_user:
-            password = login_details_obj.password
-            hashed_new_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        current_user = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS], query)
+        if current_user:
+            raise Custom_Error(CONSTANTS.USER_ALREADY_EXISTS)
+        
+        password = login_details_obj.password
+        hashed_new_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
+        neo_cv_client = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS], {"client_name": CONSTANTS.NEO_CV}) 
+        
+        if not neo_cv_client:
+            subscription_details = []
+            subscription_detail = SUBSCRIPTION_DETAILS(start_date=Utility.get_current_date(), end_date="2050-01-01")
+            subscription_details.append(subscription_detail.__dict__)
+            neo_cv_client_data = CLIENT_DETAILS(client_name=CONSTANTS.NEO_CV,api_url='13.201.157.90:82',domain='neoadepts.com',db_name=self.config.db_name,status="active",subscription_details=subscription_details,is_deleted=False,created_on=Utility.get_current_time())
+            neo_cv_client_data.__dict__.pop('_id', None)
+            neo_cv_client_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS],neo_cv_client_data.__dict__)
+        else:
+            neo_cv_client_id = neo_cv_client["_id"] 
             
-            query={"client_name": CONSTANTS.NEO_CV}
-            neo_cv_client = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS], query) 
-            
-            if not neo_cv_client:
-                
-                subscription_details = []
-                subscription_detail = SUBSCRIPTION_DETAILS(start_date=Utility.get_current_date(), end_date="2050-01-01")
-                subscription_details.append(subscription_detail.__dict__)
-                neo_cv_client_data = CLIENT_DETAILS(client_name=CONSTANTS.NEO_CV,api_url='13.201.157.90:82',domain='neoadepts.com',db_name=self.config.db_name,status="active",subscription_details=subscription_details,is_deleted=False,created_on=Utility.get_current_time())
-                neo_cv_client_data.__dict__.pop('_id', None)
-                neo_cv_client_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS],neo_cv_client_data.__dict__)
-                
-            else:
-                
-                neo_cv_client_id = neo_cv_client["_id"] 
-                
-            request_data.update({"password":hashed_new_password,"role":'product-admin',"client_id": str(neo_cv_client_id),**Utility.get_active_and_not_deleted_query()})
-            common_fields = Common_Fields(created_on=Utility.get_current_time())
-            request_data.update(common_fields.__dict__)
-            
-            user_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS],request_data)
-            if user_id is not None: 
-                self.common_service.add_user_permission_for_user(DB_Utility.obj_id_to_str(user_id),"product_admin",self.neo_db)
-                return None
-            else:
-                raise Custom_Error('Could not insert product_admin') 
-        raise Custom_Error(CONSTANTS.USER_ALREADY_EXISTS)
+        request_data.update({"password":hashed_new_password,"role":'product-admin',"client_id": str(neo_cv_client_id),**Utility.get_active_and_not_deleted_query()})
+        common_fields = Common_Fields(created_on=Utility.get_current_time())
+        request_data.update(common_fields.__dict__)
+        
+        user_id = Mongo_DB_Manager.create_document(self.neo_db[COLLECTIONS.MASTER_USER_DETAILS],request_data)
+        if user_id: 
+            self.common_service.add_user_permission_for_user(DB_Utility.obj_id_to_str(user_id),"product_admin",self.neo_db)
+            return None
+        raise Custom_Error('Could not insert product_admin') 
         
     def get_db_name(self, origin):
         domain = Utility.get_origin(origin)
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
-        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
-        client_info = Mongo_DB_Manager.read_one_document(client_collection,query)
-        if not client_info:
-            return None
-        result = {'db_name':client_info['db_name']}
-        return result['db_name'] if result['db_name'] else None
+        client_info = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS],query)
+        if client_info and 'db_name' in client_info:
+            return client_info['db_name']
+        return None
         
     def login(self,login_data,origin):
-        
         db_name = self.get_db_name(origin)
         if db_name is None:
             raise Custom_Error("Domain is not mapped")   
@@ -117,7 +105,7 @@ class Login_Service:
         return self.frame_login_response(current_user_obj,user_collection,db_name,True,None,login_details_obj)
         
     def frame_login_response(self,current_user_obj,user_collection,db,is_login=True,domain = None,login_details_obj= None):
-        client_obj=None
+        client_obj = None
         client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
 
         if self.config.CLIENT_ENV == CONSTANTS.CLIENT:
@@ -141,46 +129,50 @@ class Login_Service:
             
         client_obj=CLIENT_DETAILS(**client)          
         
-        switch_portal_view = False
         if is_login:
-            client_db_name = None
-            combined_permissions = self.get_combined_permissions(current_user_obj.role,db,current_user_obj.permissions)
-            if (hasattr(login_details_obj, 'client_domain') and login_details_obj.client_domain is not None and login_details_obj.client_domain != ''):
-                client_domain = login_details_obj.client_domain
-                result = self.get_db_by_domain(client_domain)
-                client_db_name = result['client_db_name']
-                domain = {'client_id':result['client_id'],'client_name':result['client_name']}
-            combined_widget = self.get_combined_widget(current_user_obj, db)
-            user_data = self.prepare_user_data(current_user_obj,combined_permissions,client_obj,client_db_name,combined_widget)
-            access_token = create_access_token(identity = user_data,expires_delta = False)
-
-            if access_token:
-                self.update_user_token_in_collection(current_user_obj.email, access_token, Utility.get_current_time(), user_collection)
-                enabled_column_list = self.get_column_visibility(current_user_obj._id,db)
-                del current_user_obj.visibility
-                json_current_user_modified = self.modify_current_user(current_user_obj,client_obj.client_name,combined_permissions,db,domain,enabled_column_list)
-            return json_current_user_modified,access_token
+            return self.handle_login(current_user_obj, user_collection, db, domain, login_details_obj, client_obj)
         
-        id =  current_user_obj.portal_view_id if current_user_obj.portal_view_id else current_user_obj._id
-        role = current_user_obj.role  
+        return self.handle_non_login(current_user_obj, db,domain, client_obj)
+    
+    def handle_login(self, current_user_obj, user_collection, db, domain, login_details_obj, client_obj):
+        client_db_name = None
+        combined_permissions = self.get_combined_permissions(current_user_obj.role, db, current_user_obj.permissions)
+
+        if hasattr(login_details_obj, 'client_domain') and login_details_obj.client_domain:
+            client_domain = login_details_obj.client_domain
+            result = self.get_db_by_domain(client_domain)
+            client_db_name = result['client_db_name']
+            domain = {'client_id': result['client_id'], 'client_name': result['client_name']}
+
+        combined_widget = self.get_combined_widget(current_user_obj, db)
+        user_data = self.prepare_user_data(current_user_obj, combined_permissions, client_obj, client_db_name, combined_widget)
+        access_token = create_access_token(identity=user_data, expires_delta=False)
+
+        if access_token:
+            self.update_user_token_in_collection(current_user_obj.email, access_token, Utility.get_current_time(), user_collection)
+            enabled_column_list = self.get_column_visibility(current_user_obj._id, db)
+            del current_user_obj.visibility
+            json_current_user_modified = self.modify_current_user(current_user_obj, client_obj.client_name, combined_permissions, db, domain, enabled_column_list)
+            return json_current_user_modified, access_token
+
+    def handle_non_login(self, current_user_obj, db, domain,client_obj):
+        id = current_user_obj.portal_view_id if current_user_obj.portal_view_id else current_user_obj._id
+        role = current_user_obj.role
         
         if current_user_obj.portal_view_id is None:
             portal_first_user = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_USER_DETAILS], {})
             if portal_first_user:
-                current_user_obj.portal_view_id =  portal_first_user["_id"]
+                current_user_obj.portal_view_id = portal_first_user["_id"]
                 current_user_obj.portal_view_role = portal_first_user["role"]
-            switch_portal_view = True
-        enabled_column_list = self.get_column_visibility(id,db)
+        
+        enabled_column_list = self.get_column_visibility(id, db)
         del current_user_obj.visibility
-        combined_permissions = self.get_combined_permissions(role,db,current_user_obj.permissions)
-        json_current_user_modified = self.modify_current_user(current_user_obj,client_obj.client_name,combined_permissions,db,domain,enabled_column_list,switch_portal_view)
+        combined_permissions = self.get_combined_permissions(role, db, current_user_obj.permissions)
+        json_current_user_modified = self.modify_current_user(current_user_obj, client_obj.client_name, combined_permissions, db, domain, enabled_column_list, True)
         return json_current_user_modified
     
     def update_user_token_in_collection(self, email, access_token, updated_on,user_collection):
-        
-        query = {"email": email}
-        update = {"token": access_token, "updated_on": updated_on}
-        result = Mongo_DB_Manager.update_document(user_collection, query, update)
+        result = Mongo_DB_Manager.update_document(user_collection, {"email": email}, {"token": access_token, "updated_on": updated_on})
         if result == 0:
             raise Custom_Error('Token not updated in collection')
     
@@ -201,16 +193,16 @@ class Login_Service:
                                 #widget_enable_for_db = combined_widget
                             )
         
-        user_data = access_token_data.__dict__
-        
-        return user_data
+        return access_token_data.__dict__
     
     def get_db_by_domain(self, domain):
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
         client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         client_info = Mongo_DB_Manager.read_one_document(client_collection,query)
+        
         if not client_info:
             raise Custom_Error('domain not mapped')
+        
         if 'db_name' not in client_info or client_info['db_name']==None:
             raise Custom_Error('db information not found for ',domain)
         
@@ -221,16 +213,13 @@ class Login_Service:
         }
     
     def get_api_url(self, domain):
-        client_collection = self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS]
         query = {"domain": domain, **Utility.get_active_and_not_deleted_query()}
-        client_info = Mongo_DB_Manager.read_one_document(client_collection, query)
+        client_info = Mongo_DB_Manager.read_one_document(self.neo_db[COLLECTIONS.MASTER_CLIENT_DETAILS], query)
         if not client_info:
             raise Custom_Error("Domain is not mapped")
-        result = {'api_url':client_info['api_url'],'version':self.config.version}
-        return result
+        return {'api_url':client_info['api_url'],'ats_url':client_info['ats_url'],'version':self.config.version}
 
     def password_check(self, current_user_obj, password):
-        
         input_pwd_bytes = password.encode('utf-8')
         
         if isinstance(current_user_obj.password, bytes):

@@ -1,7 +1,6 @@
 import os
 
 from datetime import datetime
-
 from whoosh.index import open_dir
 from whoosh.fields import TEXT, Schema,DATETIME
 from whoosh.qparser import QueryParser 
@@ -10,9 +9,8 @@ from whoosh.fields import Schema, TEXT
 from whoosh import scoring
 from whoosh.query import And
 
-from NeoAdept.config import Config
-from NeoAdept.utilities.collection_names import COLLECTIONS
-
+from ..config import Config
+from ..utilities.collection_names import COLLECTIONS
 from ..gbo.common import Custom_Error
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.utility import Utility

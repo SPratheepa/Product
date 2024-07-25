@@ -25,7 +25,7 @@ class CLIENT_DETAILS:
     updated_on: Optional[datetime] = None
     subscription_details: Optional[List[SUBSCRIPTION_DETAILS]] =  field(default_factory=list)
     _id: Optional[str] = None 
-    #client_id: Optional[str] = None
+    ats_url: Optional[str] = None
 
     def __post_init__(self):
         # Check for missing mandatory attributes

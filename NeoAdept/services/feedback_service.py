@@ -32,6 +32,7 @@ class Feedback_Service():
     def save_feedback_details(self, feedback_data, identity_data,db):
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
+        
         feedback_data_request = create_feedback_request(feedback_data)
         feedback_data_request.parse_request()
         feedback_data_request.validate_request() 
@@ -50,21 +51,17 @@ class Feedback_Service():
     
     def upload_attachment(self, files):
         attachments = []
-        path_dir = os.path.dirname(__file__)
-        neoadept_dir = os.path.abspath(os.path.join(path_dir, '..','..'))
-        save_pic_path = os.path.join(neoadept_dir, self.attachment_path)
+        save_pic_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', self.attachment_path))
         os.makedirs(save_pic_path, exist_ok=True)
 
         for file in files.getlist('file'):
-            if file.filename == '':
-                continue  # Skip empty files
-            id = str(uuid4())
-            filename = id + '_' + secure_filename(file.filename)
-            file_location_path = os.path.join(save_pic_path, filename)
-            location_path = os.path.join(self.attachment_path, filename)
-            location_path = location_path.replace("\\", "/")
-            file.save(file_location_path)
-            attachments.append({"id": id , "file_name":filename, "file_location_path":location_path})
+            if file.filename:
+                id = str(uuid4())
+                filename = id + '_' + secure_filename(file.filename)
+                file_location_path = os.path.join(save_pic_path, filename)
+                location_path = os.path.join(self.attachment_path, filename).replace("\\", "/")
+                file.save(file_location_path)
+                attachments.append({"id": id , "file_name":filename, "file_location_path":location_path})
         
         if not attachments:
             raise Custom_Error(CONSTANTS.INVALID_INPUT)
@@ -79,15 +76,14 @@ class Feedback_Service():
         
         #self.common_service.create_log_details(email_from_token,request_data,"get_feedback_list",db)
         
-        if role_from_token == CONSTANTS.PRODUCT_ADMIN:
-            return self.perform_pagination(request_data,db)
-        else:
+        if role_from_token != CONSTANTS.PRODUCT_ADMIN:
             filter_by = {"created_by": [email_from_token]}
             if 'filter_by' not in request_data: 
                 request_data["filter_by"] = [filter_by]
             else:
                 request_data["filter_by"].append(filter_by)
-            return self.perform_pagination(request_data,db)
+                
+        return self.perform_pagination(request_data,db)
 
     def perform_pagination(self, request,db):
         pagination = Pagination(**request)

@@ -12,7 +12,7 @@
     }
   ],
   "paths": {
-    "prod/{version}/get_instance": {
+    "/prod/v1/get_instance": {
       "get": {
         "tags": [ "Login Routes" ],
         "summary": "Get login instance information",
@@ -96,7 +96,7 @@
         }
       }
     },
-    "prod/{version}/login": {
+    "/prod/v1/login": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "User Login",
@@ -192,7 +192,7 @@
         }
       }
     },
-    "prod/{version}/reset_password": {
+    "/prod/v1/reset_password": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Reset Password",
@@ -259,7 +259,7 @@
         }
       }
     },
-    "prod/{version}/forgot_password": {
+    "/prod/v1/forgot_password": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Forgot Password",
@@ -322,7 +322,7 @@
         }
       }
     },
-    "prod/{version}/verify_otp": {
+    "/prod/v1/verify_otp": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Verify OTP",
@@ -393,7 +393,7 @@
         }
       }
     },
-    "prod/{version}/change_password": {
+    "/prod/v1/change_password": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Change Password",
@@ -467,7 +467,7 @@
         }
       }
     },
-    "prod/{version}/create_product_admin_for_development": {
+    "/prod/v1/create_product_admin_for_development": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Create product-admin user",
@@ -542,7 +542,7 @@
       }
     },
 
-    "prod/{version}/logout": {
+    "/prod/v1/logout": {
       "post": {
         "tags": [ "Login Routes" ],
         "summary": "Logout",
@@ -586,7 +586,7 @@
       }
 
     },
-    "prod/{version}/client/save_client_details": {
+    "/prod/v1/client/save_client_details": {
       "post": {
         "tags": [ "Client Routes" ],
         "summary": "Add/Update Client Details",
@@ -709,7 +709,7 @@
         }
       }
     },
-    "prod/{version}/client/add_subscriptions": {
+    "/prod/v1/client/add_subscriptions": {
       "post": {
         "tags": [ "Client Routes" ],
         "summary": "Add Subscriptions for an Existing Client",
@@ -796,7 +796,7 @@
         }
       }
     },
-    "prod/{version}/client/delete_client_details": {
+    "/prod/v1/client/delete_client_details": {
       "post": {
         "tags": [ "Client Routes" ],
         "summary": "Delete Client Details",
@@ -866,7 +866,7 @@
         }
       }
     },
-    "prod/{version}/client/get_client_details": {
+    "/prod/v1/client/get_client_details": {
       "post": {
         "tags": [ "Client Routes" ],
         "summary": "Get Client Details",
@@ -1030,7 +1030,7 @@
         }
       }
     },
-    "prod/{version}/user/save_user": {
+    "/prod/v1/user/save_user": {
       "post": {
         "tags": [ "User Routes" ],
         "summary": "Add/update User Details",
@@ -1127,7 +1127,7 @@
         }
       }
     },
-    "prod/{version}/user/delete_user": {
+    "/prod/v1/user/delete_user": {
       "post": {
         "tags": [ "User Routes" ],
         "summary": "Delete User",
@@ -1197,7 +1197,7 @@
         }
       }
     },
-    "prod/{version}/user/get_user_list": {
+    "/prod/v1/user/get_user_list": {
       "post": {
         "tags": [ "User Routes" ],
         "summary": "Get User List",
@@ -1316,7 +1316,7 @@
         }
       }
     },
-    "prod/{version}/user/upload_user_from_excel": {
+    "/prod/v1/user/upload_user_from_excel": {
       "post": {
         "tags": [ "User Routes" ],
         "summary": "upload user details  ",
@@ -1398,7 +1398,7 @@
         }
       }
     },
-    "prod/{version}/email/send_email": {
+    "/prod/v1/email/send_email": {
       "post": {
         "tags": [ "Email Routes" ],
         "summary": "Send Email with Attachments and store info",
@@ -1508,7 +1508,7 @@
         }
       }
     },
-    "prod/{version}/model/search_text_in_document": {
+    "/prod/v1/model/search_text_in_document": {
       "post": {
         "tags": [
           "Model Routes"
@@ -1574,7 +1574,7 @@
         }
       }
     },
-    "prod/{version}/my_list/add_group_list": {
+    "/prod/v1/my_list/add_group_list": {
       "post": {
         "tags": [ "MyList Routes" ],
         "summary": "Add List API",
@@ -1653,7 +1653,7 @@
         }
       }
     },
-    "prod/{version}/my_list/rename_group_list": {
+    "/prod/v1/my_list/rename_group_list": {
       "post": {
         "tags": [ "MyList Routes" ],
         "summary": "Rename List API",
@@ -1736,7 +1736,7 @@
         }
       }
     },
-    "prod/{version}/my_list/delete_group_list": {
+    "/prod/v1/my_list/delete_group_list": {
       "post": {
         "tags": [ "MyList Routes" ],
         "summary": "Delete List API",
@@ -1818,7 +1818,7 @@
         }
       }
     },
-    "prod/{version}/my_list/get_group_list": {
+    "/prod/v1/my_list/get_group_list": {
       "post": {
         "tags": [ "MyList Routes" ],
         "summary": "View List Info",
@@ -1983,7 +1983,7 @@
         }
       }
     },
-    "prod/{version}/email/view_mail_history": {
+    "/prod/v1/email/view_mail_history": {
       "post": {
         "tags": [ "Email Routes" ],
         "summary": "View Email Info",
@@ -2163,7 +2163,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upsert_role": {
+    "/prod/v1/ui_template/upsert_role": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update Roles ",
@@ -2256,7 +2256,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upsert_widget": {
+    "/prod/v1/ui_template/upsert_widget": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update widgets ",
@@ -2365,7 +2365,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upsert_page": {
+    "/prod/v1/ui_template/upsert_page": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update pages ",
@@ -2474,7 +2474,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upsert_sub_menu": {
+    "/prod/v1/ui_template/upsert_sub_menu": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update sub_menu ",
@@ -2575,7 +2575,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upsert_menu": {
+    "/prod/v1/ui_template/upsert_menu": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "upsert Menu ",
@@ -2671,7 +2671,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_role": {
+    "/prod/v1/ui_template/delete_role": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2726,7 +2726,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_widget": {
+    "/prod/v1/ui_template/delete_widget": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2781,7 +2781,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_page": {
+    "/prod/v1/ui_template/delete_page": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2836,7 +2836,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_menu": {
+    "/prod/v1/ui_template/delete_menu": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2891,7 +2891,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_sub_menu": {
+    "/prod/v1/ui_template/delete_sub_menu": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2946,7 +2946,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/delete_ui_template": {
+    "/prod/v1/ui_template/delete_ui_template": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3007,7 +3007,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/get_roles": {
+    "/prod/v1/ui_template/get_roles": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3283,7 +3283,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/get_menus": {
+    "/prod/v1/ui_template/get_menus": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3544,7 +3544,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/get_sub_menus": {
+    "/prod/v1/ui_template/get_sub_menus": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3735,7 +3735,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/get_pages": {
+    "/prod/v1/ui_template/get_pages": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3911,7 +3911,7 @@
         }
       }
     },
-    "prod/{version}//ui_template/get_widgets": {
+    "/prod/v1//ui_template/get_widgets": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -4060,7 +4060,7 @@
         }
       }
     },
-    "prod/{version}/ui_template/upload_excel_data": {
+    "/prod/v1/ui_template/upload_excel_data": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -4135,7 +4135,7 @@
         }
       }
     },
-    "prod/{version}/feedback/create_feedback": {
+    "/prod/v1/feedback/create_feedback": {
       "post": {
         "tags": [
           "Feedback Routes"
@@ -4235,7 +4235,7 @@
         }
       }
     },
-    "prod/{version}/feedback/upload_attachment": {
+    "/prod/v1/feedback/upload_attachment": {
       "post": {
         "tags": [ "Feedback Routes" ],
         "summary": "Upload attachment",
@@ -4290,7 +4290,7 @@
         }
       }
     },
-    "prod/{version}/feedback/get_feedback_list": {
+    "/prod/v1/feedback/get_feedback_list": {
       "post": {
         "tags": [
           "Feedback Routes"
@@ -4388,7 +4388,7 @@
         }
       }
     },
-    "prod/{version}/dropdown/get_filters_for_collection": {
+    "/prod/v1/dropdown/get_filters_for_collection": {
       "post": {
         "tags": [
           "Dropdown Routes"
@@ -4467,7 +4467,7 @@
         }
       }
     },
-    "prod/{version}/dropdown/dropdown_list": {
+    "/prod/v1/dropdown/dropdown_list": {
       "post": {
         "tags": [
           "Dropdown Routes"
@@ -4576,7 +4576,7 @@
         }
       }
     },
-    "prod/{version}/activity/save_activity": {
+    "/prod/v1/activity/save_activity": {
       "post": {
         "tags": [
           "Activity Routes"
@@ -4684,7 +4684,7 @@
         }
       }
     },
-    "prod/{version}/activity/delete_activity": {
+    "/prod/v1/activity/delete_activity": {
       "post": {
         "tags": [ "Activity Routes" ],
         "summary": "Delete activity API",
@@ -4762,7 +4762,7 @@
         }
       }
     },
-    "prod/{version}/activity/get_all_activity": {
+    "/prod/v1/activity/get_all_activity": {
       "post": {
         "tags": [
           "Activity Routes"
@@ -4866,7 +4866,7 @@
         }
       }
     },
-    "prod/{version}/common/upload_attachments": {
+    "/prod/v1/common/upload_attachments": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "upload attachment details  ",
@@ -4942,7 +4942,7 @@
         }
       }
     },
-    "prod/{version}/common/get_doc/attachment/{module_type}/{file}": {
+    "/prod/v1/common/get_doc/attachment/{module_type}/{file}": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "get attachment details  ",
@@ -4998,7 +4998,7 @@
         }
       }
     },
-    "prod/{version}/common/update_column_settings": {
+    "/prod/v1/common/update_column_settings": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "enabled columns for the users ",
@@ -5084,7 +5084,7 @@
 
       }
     },
-    "prod/{version}/common/get_history": {
+    "/prod/v1/common/get_history": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "Get history of the candidate or company as per the given collection",
@@ -5209,7 +5209,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_widget/save_dynamic_widget": {
+    "/prod/v1/dynamic_widget/save_dynamic_widget": {
       "post": {
         "tags": [ "Dynamic Widget Routes" ],
         "summary": "Add dynamic widgets ",
@@ -5440,7 +5440,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_widget/get_dynamic_widget": {
+    "/prod/v1/dynamic_widget/get_dynamic_widget": {
       "post": {
         "tags": [ "Dynamic Widget Routes" ],
         "summary": "Get dynamic widgets details ",
@@ -5529,7 +5529,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_widget/generate_dynamic_widget_query": {
+    "/prod/v1/dynamic_widget/generate_dynamic_widget_query": {
       "post": {
         "tags": [ "Dynamic Widget Routes" ],
         "summary": "Generate dynamic widget query and get data",
@@ -5606,7 +5606,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_widget/preview_query_result": {
+    "/prod/v1/dynamic_widget/preview_query_result": {
       "post": {
         "tags": [ "Dynamic Widget Routes" ],
         "summary": "Use dynamic widget query and get results",
@@ -5827,7 +5827,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_widget/delete_dynamic_widget": {
+    "/prod/v1/dynamic_widget/delete_dynamic_widget": {
       "post": {
         "tags": [ "Dynamic Widget Routes" ],
         "summary": "Delete Dynamic Widget Details",
@@ -5897,7 +5897,7 @@
         }
       }
     },
-    "prod/{version}/register/client_registration": {
+    "/prod/v1/register/client_registration": {
       "post": {
         "tags": [ "Register Routes" ],
         "summary": "Register a client",
@@ -5971,7 +5971,7 @@
         }
       }
     },
-    "prod/{version}/register/get_registration_details": {
+    "/prod/v1/register/get_registration_details": {
       "post": {
         "tags": [ "Register Routes" ],
         "summary": "Get Registration Details",
@@ -6099,7 +6099,7 @@
         }
       }
     },
-    "prod/{version}/register/update_registration_status": {
+    "/prod/v1/register/update_registration_status": {
       "post": {
         "tags": [
           "Register Routes"
@@ -6168,7 +6168,7 @@
         }
       }
     },
-    "prod/{version}/common/get_log_details": {
+    "/prod/v1/common/get_log_details": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "Get Log Details",
@@ -6296,7 +6296,7 @@
         }
       }
     },
-    "prod/{version}/common/add_module_details": {
+    "/prod/v1/common/add_module_details": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "Module Info API",
@@ -6396,7 +6396,7 @@
         }
       }
     },
-    "prod/{version}/common/get_module_details": {
+    "/prod/v1/common/get_module_details": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "Get module list with api informations",
@@ -6523,7 +6523,7 @@
         }
       }
     },
-    "prod/{version}/common/load_role_permission": {
+    "/prod/v1/common/load_role_permission": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "Load Role Permissions",
@@ -6578,7 +6578,7 @@
         }
       }
     },
-    "prod/{version}/common/get_document/{folder}/{file}": {
+    "/prod/v1/common/get_document/{folder}/{file}": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "get attachment details  ",
@@ -6634,7 +6634,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_db/get_collection_list": {
+    "/prod/v1/dynamic_db/get_collection_list": {
       "post": {
         "tags": [ "Dynamic DB Routes" ],
         "summary": "Get collection details along with columns and datatypes",
@@ -6730,7 +6730,7 @@
         }
       }
     },
-    "prod/{version}/common/enable_user_widget": {
+    "/prod/v1/common/enable_user_widget": {
       "post": {
         "tags": [ "Common Routes" ],
         "summary": "enable/disable collection or columns for widget for the users ",
@@ -6825,7 +6825,7 @@
 
       }
     },
-    "prod/{version}/permission/save_role_permission": {
+    "/prod/v1/permission/save_role_permission": {
       "post": {
         "tags": [ "Permission Routes" ],
         "summary": "Add/update role permission details",
@@ -6907,7 +6907,7 @@
         }
       }
     },
-    "prod/{version}/permission/save_user_permission": {
+    "/prod/v1/permission/save_user_permission": {
       "post": {
         "tags": [ "Permission Routes" ],
         "summary": "Add/update user permission details",
@@ -6997,7 +6997,7 @@
         }
       }
     },
-    "prod/{version}/permission/get_role_permission": {
+    "/prod/v1/permission/get_role_permission": {
       "post": {
         "tags": [ "Permission Routes" ],
         "summary": "Get role permission details",
@@ -7124,7 +7124,7 @@
         }
       }
     },
-    "prod/{version}/dynamic_db/get_db_details": {
+    "/prod/v1/dynamic_db/get_db_details": {
       "post": {
         "tags": [ "Dynamic DB Routes" ],
         "summary": "Get db details",
@@ -7236,7 +7236,7 @@
         }
       }
     },
-    "prod/{version}/permission/get_user_permission": {
+    "/prod/v1/permission/get_user_permission": {
       "post": {
         "tags": [ "Permission Routes" ],
         "summary": "Get user permission details",
