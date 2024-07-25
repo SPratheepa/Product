@@ -57,6 +57,10 @@
                   "type": "string",
                   "description": "application url of the client"
                 },
+                "ats_url": {
+                  "type": "string",
+                  "description": "ats service url of the client"
+                },
                 "domain": {
                   "type": "string",
                   "description": "domain of the client"
