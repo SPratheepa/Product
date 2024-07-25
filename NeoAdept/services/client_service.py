@@ -1,8 +1,5 @@
-from datetime import datetime
 from threading import Thread
-from flask import json, Config
-from NeoAdept.services.common_service import Common_Service
-from pymongo import MongoClient
+from flask import Config
 
 from ..utilities.collection_names import COLLECTIONS
 from ..gbo.bo import Pagination
@@ -25,6 +22,7 @@ class Client_Service:
 
     def __init__(self,config:Config,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.config = config
             self.db = db

@@ -1,29 +1,19 @@
 ﻿import os
+
 from werkzeug.utils import secure_filename
-from NeoAdept.gbo.bo import Pagination
-from NeoAdept.gbo.common import Custom_Error
-from NeoAdept.pojo.directory import DIRECTORY
-from NeoAdept.pojo.email_details import EMAIL_DETAILS
-from NeoAdept.pojo.access_token import ACCESS_TOKEN
-from NeoAdept.services.common_service import Common_Service
-from NeoAdept.utilities.collection_names import COLLECTIONS
-from NeoAdept.utilities.db_utility import DB_Utility, Mongo_DB_Manager
-from ..utilities.constants import CONSTANTS
-from ..utilities.utility import Utility
 from flask import current_app
-#from pysendpulse.pysendpulse import PySendPulse
-from ..config import Config
-from flask import Flask, request, jsonify,current_app
-import requests
-import json
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
 from flask_mail import Message,Mail
 
-
+from ..gbo.bo import Pagination
+from ..gbo.common import Custom_Error
+from ..pojo.directory import DIRECTORY
+from ..pojo.email_details import EMAIL_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
+from ..utilities.collection_names import COLLECTIONS
+from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
+from ..utilities.constants import CONSTANTS
+from ..utilities.utility import Utility
+from ..config import Config
 
 class Email_Service:
     _instance = None  # Class variable to store the singleton instance
@@ -36,6 +26,7 @@ class Email_Service:
     
     def __init__(self,config:Config,keyset_map,logger,db):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.config = config
             self.db = db
@@ -48,14 +39,8 @@ class Email_Service:
             self.SENDPULSE_TOKEN_URL = self.config.sendpulse_token_url
             self.SENDPULSE_EMAIL_URL = self.config.sendpulse_email_url
             
-        
     def send_email1(self,request,db):
-        
-        recipients = request.form.get('to', [])
-        to_list = []
-        for recipient in recipients:
-            to_list.append({'email': recipient})
-            
+        recipients = request.form.getlist('to')
         subject = request.form.get('subject', 'Default Subject')
         html = request.form.get('html', '<p>Default HTML content</p>')
         body = request.form.get('text','Default text content')
@@ -64,9 +49,10 @@ class Email_Service:
         
         files = request.files.getlist('attachments')
         saved_attachments = []
+        mail_attachments_folder = self.config.mail_attachments_folder
+        
         if files:
-            if not os.path.exists(self.config.mail_attachments_folder):
-                os.makedirs(self.config.mail_attachments_folder)
+            os.makedirs(mail_attachments_folder, exist_ok=True)
             for file in files:
                 filename = secure_filename(file.filename)
                 file_content = file.read()
@@ -80,9 +66,10 @@ class Email_Service:
                 saved_attachments.append(file_path)
         
         response = Utility.third_party_email_function(self.SENDPULSE_API_KEY,self.SENDPULSE_API_SECRET,self.SENDPULSE_TOKEN_URL,self.SENDPULSE_EMAIL_URL,email_data)       
+        
         if response.status_code != 200:
             raise Custom_Error(response.json())
-              
+        
         email_data = {
             'from_email': self.verified_sender_email,
             'send_to': recipients,
@@ -91,12 +78,13 @@ class Email_Service:
             'attachments': saved_attachments,
             'sent_on': Utility.get_current_time()
         }
+        
         result = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_EMAIL_DETAILS],email_data)
+        
         if not result:
             raise Custom_Error('Could not save mail info in db')
         
     def send_email(self,request,db):
-        
         recipients = request.form.get('to', [])
         subject = request.form.get('subject', 'Default Subject')
         html = request.form.get('html', '<p>Default HTML content</p>')
@@ -105,13 +93,11 @@ class Email_Service:
         msg.html = html
         msg.body = text
 
-            
         files = request.files.getlist('attachments')
         saved_attachments = []
         if files:
             mail_folder = self.directory.get_folder(self.config.mail_attachments_folder)
             self.directory.create_folder(mail_folder)
-            
             for file in files:
                 filename = secure_filename(file.filename)
                 file_content = file.read()
@@ -122,7 +108,7 @@ class Email_Service:
                 
         mail = Mail(current_app)
         mail.send(msg)
-              
+        
         email_data = {
             'from_email': self.config.verified_sender_email,
             'send_to': recipients,
@@ -133,26 +119,19 @@ class Email_Service:
         }
         result = Mongo_DB_Manager.create_document(db[COLLECTIONS.MASTER_EMAIL_DETAILS],email_data)
         if not result:
-            raise Custom_Error('Could not save mail info in db')
-          
-       
+            raise Custom_Error('Mail info is not saved in db')
+
     def view_mail_history(self,identity_data,request_data,db):
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         pagination = Pagination(**request_data) 
-        
         ##self.common_service.create_log_details(identity_data_obj.email,request_data,"view_mail_history",db)
         
         email_collection = db[COLLECTIONS.MASTER_EMAIL_DETAILS]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
-           
+        
         docs,count = Mongo_DB_Manager.get_paginated_data1(email_collection,query,pagination) 
-        if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(email_collection,query)
+        if docs:
             if pagination.is_download==True:
                 return docs,count
             return DB_Utility.convert_doc_to_cls_obj(docs,EMAIL_DETAILS),count
-        
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND) 
-        
-    
-    

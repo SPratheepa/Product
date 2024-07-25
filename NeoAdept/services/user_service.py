@@ -28,6 +28,7 @@ class User_Service:
 
     def __init__(self,config:Config,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.config = config
             self.db = db
@@ -43,7 +44,7 @@ class User_Service:
         
         user_client = Mongo_DB_Manager.read_one_document(self.client_collection,query)
         user_client_obj = CLIENT_DETAILS(**user_client)
-           
+        
         if user_client_obj.client_name == CONSTANTS.NEO_CV:
             user_collection = self.mongo_client[self.config.neo_db][COLLECTIONS.MASTER_USER_DETAILS]
         else:
@@ -88,7 +89,7 @@ class User_Service:
         existing_user = Mongo_DB_Manager.read_one_document(user_collection, query)
         if existing_user :
             raise Custom_Error(CONSTANTS.USER_EXISTS)
-                           
+        
         random_password = Utility.generate_random_password()  
         user_data_obj.password = bcrypt.hashpw(random_password.encode('utf-8'), bcrypt.gensalt())
         user_data_obj.created_on = Utility.get_current_time()
@@ -100,7 +101,7 @@ class User_Service:
             user_data_obj.client_id = identity_data_obj.client_id
             if client_db_name is not None and client_db_name != self.config.neo_db:
                 user_data_obj.client_id = self.get_client_id_by_db(identity_data_obj.client_db_name)
-                       
+        
         attributes_to_delete = ["token","updated_by","updated_on","_id","entity_id","otp","otp_timestamp","client_name","db_name","new_password","current_password","client_domain","photo_file_name","photo","visibility"]
         if not hasattr(user_data_obj, 'photo_id') or getattr(user_data_obj, 'photo_id') is None:
             attributes_to_delete.append('photo_id')
@@ -125,7 +126,7 @@ class User_Service:
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
         user_data_obj = USER_DETAILS(**user_data)
-               
+    
         user_data_request = update_user_request(user_data) 
         user_data_request.parse_request()
         user_data_request.validate_request()
@@ -198,7 +199,7 @@ class User_Service:
         existing_user_obj = USER_DETAILS(**existing_user)
         if existing_user_obj.is_deleted == CONSTANTS.TRUE:
             raise Custom_Error(CONSTANTS.USER_ALREADY_DELETED)
-                       
+
         user_data_obj.updated_on = Utility.get_current_time()
         user_data_obj.updated_by = email_from_token
         user_data_obj.is_deleted = True
@@ -213,14 +214,14 @@ class User_Service:
                 client_db_name = identity_data_obj.client_db_name
                 if existing_user_obj.role != CONSTANTS.USER or client_db_name is None or client_db_name == self.config.neo_db:
                     raise Custom_Error('product-user can delete client-users only')
-                                             
+
         _id = user_data_obj._id
         
         query = {"_id":DB_Utility.str_to_obj_id(_id)}
                 
         attributes_to_delete = ["_id","name","phone","email","password","role","status","client_id","token","notes","created_on","created_by","entity_id","otp","otp_timestamp","client_name","db_name","new_password","current_password","client_domain","photo_id","photo_file_name","photo","visibility"]
         DB_Utility.delete_attributes_from_obj(user_data_obj,attributes_to_delete)   
-                  
+
         result = Mongo_DB_Manager.update_document(user_collection, query, user_data_obj.__dict__)
         if result != 1:
             raise Custom_Error('Could not delete user')
@@ -302,7 +303,7 @@ class User_Service:
         
         if role_from_token == CONSTANTS.USER:
             raise Custom_Error('User cannot add/update new users')
-                   
+
         user_data_request = upload_user_request(request) 
         user_data_request.parse_request()
         user_data_request.validate_request()
@@ -312,14 +313,8 @@ class User_Service:
             missing_keys = [key for key in CONSTANTS.USER_KEYS if key not in column_names]
             if missing_keys:
                 raise Custom_Error(CONSTANTS.EXCEL_NOT_VALID)
-           
-                     
         result_dict = {}
         for index, doc in enumerate(documents):
-            
-            #print("index::",index)
-            #print("DOC::",doc)
-            
             doc = USER_DETAILS(**doc)
             
             if self.check_required_field_for_user(CONSTANTS.REGISTER_USER_REQ_FIELDS_ADMIN ,doc,index, result_dict):
@@ -339,7 +334,7 @@ class User_Service:
                         status=f"Cannot add/edit user from another client for the index {index}"
                         DB_Utility.update_status(doc, result_dict, index,status)      
                         continue   
-                             
+
                 if doc.role != CONSTANTS.USER:
                     status = f"Admin can add/update users only for the index {index}"
                     DB_Utility.update_status(doc, result_dict, index,status)      
@@ -406,15 +401,15 @@ class User_Service:
         doc.status_code = status_code
         doc.status = status
         return doc
-              
+
     def check_required_field_for_user(self,fields,doc,index, result_dict):
-                                 
+
         for field in fields :
             if not hasattr(doc, field):
                 status=f"Missing required field: {field} for the index {index}"
                 DB_Utility.update_status(doc,result_dict, index,status)                
                 return True
-                              
+
     def check_duplicate_value_for_user(self,doc,index, result_dict,collection):
         doc_dict = {key: getattr(doc, key) for key in doc.__dict__ if key not in CONSTANTS.KEYS_TO_REMOVE}
         if doc._id is not None:
@@ -424,7 +419,7 @@ class User_Service:
             
             cursor = Mongo_DB_Manager.read_documents(collection,query)
             existing_users = list(cursor)
-           
+
             if _id not in [user['_id'] for user in existing_users]:
                 status = f'The id {doc._id} does not exist'
                 DB_Utility.update_status(doc, result_dict, index,status)                            
@@ -437,7 +432,7 @@ class User_Service:
                         DB_Utility.update_status(doc, result_dict, index,status)                            
                         return True
             result_dict = {key: value for key, value in result_dict.items() if key not in CONSTANTS.KEYS_TO_REMOVE}
-                                          
+
             if result_dict == doc_dict:
                 status=f'No update required for the {doc._id}'
                 DB_Utility.update_status(doc,result_dict, index,status)
@@ -460,6 +455,3 @@ class User_Service:
         query = {"user_id": user_id}
         deleted_count = Mongo_DB_Manager.delete_documents(db['USER_PERMISSION'],query) 
         return True
-              
-                  
-        

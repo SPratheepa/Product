@@ -2,9 +2,7 @@ import os
 from uuid import uuid4
 from werkzeug.utils import secure_filename
 
-from NeoAdept.services.common_service import Common_Service
-from NeoAdept.utilities.collection_names import COLLECTIONS
-
+from ..utilities.collection_names import COLLECTIONS
 from ..pojo.access_token import ACCESS_TOKEN
 from ..config import Config
 from ..gbo.bo import Common_Fields, Pagination
@@ -14,7 +12,6 @@ from ..requests.feedback_request import create_feedback_request
 from ..utilities.constants import CONSTANTS
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.utility import Utility
-
 class Feedback_Service():  
     _instance = None  # Class variable to store the singleton instance
     
@@ -25,11 +22,11 @@ class Feedback_Service():
         return cls._instance
 
     def __init__(self,logger,db,config:Config,keyset_map):
-        
         if not hasattr(self, 'initialized'):
             self.logger = logger
             self.attachment_path = config.attachment_path
             self.key_nested_key_map = keyset_map
+            self.initialized = True
             #self.common_service = Common_Service(logger,db,keyset_map)
 
     def save_feedback_details(self, feedback_data, identity_data,db):
@@ -76,7 +73,6 @@ class Feedback_Service():
     def get_feedback_list(self, request_data , identity_data,db):
         filter_by = request_data.get('filter_by', [])
         request_data['filter_by'] = [f for f in filter_by if 'client_id' and 'is_deleted' not in f]
-        #print(request_data)
 
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
@@ -85,7 +81,6 @@ class Feedback_Service():
         
         if role_from_token == CONSTANTS.PRODUCT_ADMIN:
             return self.perform_pagination(request_data,db)
-        
         else:
             filter_by = {"created_by": [email_from_token]}
             if 'filter_by' not in request_data: 
@@ -94,16 +89,13 @@ class Feedback_Service():
                 request_data["filter_by"].append(filter_by)
             return self.perform_pagination(request_data,db)
 
-        
     def perform_pagination(self, request,db):
         pagination = Pagination(**request)
         query = {}
         if pagination.filter_by:
                 updated_filter_by = Utility.update_filter_keys(pagination.filter_by,self.key_nested_key_map[COLLECTIONS.MASTER_FEEDBACK_DETAILS])
                 query = DB_Utility.build_filtered_data_query(updated_filter_by)        
-        
         docs,count = Mongo_DB_Manager.get_paginated_data1(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS],query,pagination)
         if docs and len(docs)>0:
-            #count = Mongo_DB_Manager.count_documents(db[COLLECTIONS.MASTER_FEEDBACK_DETAILS], query)
             return DB_Utility.convert_doc_to_cls_obj(docs,FEEDBACK_DETAILS),count
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND)

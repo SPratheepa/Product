@@ -34,7 +34,6 @@ class Dynamic_DB_Route(Blueprint):
             request_data = request.json 
             if "db_type" in request_data and request_data["db_type"]=="SQL":
                 collections,count = self.dynamic_db_service.get_sql_table_list(identity_data, request_data) 
-                print(collections,count)
             else:
                 collections, count = self.dynamic_db_service.get_collection_list(request_data, g.db)
             return Utility.generate_success_response(is_table=True, message=CONSTANTS.DRS, data=collections, count=count)

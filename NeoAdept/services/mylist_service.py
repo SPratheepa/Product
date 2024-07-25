@@ -27,6 +27,7 @@ class My_List_Service():
 
     def __init__(self,config,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.my_list_file = config.list_group_file_name
             self.keyset_map = keyset_map
@@ -44,7 +45,6 @@ class My_List_Service():
         list_data_request = create_list_request(list_data) 
         list_data_request.parse_request()
         list_data_request.validate_request()
-      
         
         fields_to_check = ["list_name"]
         query = DB_Utility.fields_to_check(list_data_obj,fields_to_check)
@@ -67,7 +67,6 @@ class My_List_Service():
         
     
     def rename_group_list(self, list_data,identity_data,db):
-       
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         email_from_token, role_from_token = Utility.get_data_from_identity(identity_data_obj)
         
@@ -82,7 +81,7 @@ class My_List_Service():
         
         cursor = Mongo_DB_Manager.read_documents(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         existing_lists = list(cursor)
-                 
+        
         if _id not in [list['_id'] for list in existing_lists]:
             raise Custom_Error('List not found')
         
@@ -92,7 +91,7 @@ class My_List_Service():
 
         DB_Utility.remove_extra_attributes(list_data_obj.__dict__,list_data)
         del list_data_obj._id        
-             
+        
         list_data_obj.updated_on = Utility.get_current_time()
         list_data_obj.updated_by = email_from_token
 
@@ -122,12 +121,12 @@ class My_List_Service():
         list_data_request = delete_list_request(list_data) 
         list_data_request.parse_request()
         list_data_request.validate_request()
-                   
+        
         #list_data_obj = LIST_GROUP(**list_data)
 
         _id_list = list_data.get('_id')  #muliple id ex:refere candidate list delete
         id_objects_list = DB_Utility.str_id_list_to_obj_list(_id_list)
-       
+
         query = {"_id":{'$in':id_objects_list}}
         existing_documents = Mongo_DB_Manager.read_documents(db[COLLECTIONS.ATS_LIST_GROUPn],query)
         if not existing_documents:
@@ -172,27 +171,20 @@ class My_List_Service():
             
             
     def get_group_list(self,identity_data, request_data,db):
-        
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         pagination = Pagination(**request_data) 
         ##self.common_service.create_log_details(identity_data_obj.email,request_data,"get_group_list",db)
         list_collection = db[COLLECTIONS.ATS_LIST_GROUPn]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
-        
         docs,count = Mongo_DB_Manager.get_paginated_data1(list_collection,query,pagination) 
-
         if docs and len(docs)>0:
-            
-            #count = Mongo_DB_Manager.count_documents(list_collection,query)
             for doc in docs:
                 doc['list_id'] = DB_Utility.obj_id_to_str(doc['_id'])
             if pagination.is_download==True:
                 return docs,count
-                
             return DB_Utility.convert_doc_to_cls_obj(docs,LIST_GROUP),count
-        
         raise Custom_Error(CONSTANTS.NO_DATA_FOUND)
-                      
+
     def get_data_in_excel(self,data):
         df = pd.DataFrame(data)
         df.to_excel(self.my_list_file,index=False)  

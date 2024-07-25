@@ -27,10 +27,6 @@ class Client_Route(Blueprint):
             '/get_client_details': self.get_client_details,
         }
 
-        # Uncomment and add more routes as needed
-        # self.add_url_rule('/update_client_details', view_func=self.secure_route(self.update_client_details), methods=['PUT'])
-        # self.add_url_rule('/upload_client_details_from_excel', view_func=self.secure_route(self.upload_client_details_from_excel), methods=['POST'])
-        # self.add_url_rule('/update_client_settings', view_func=self.secure_route(self.update_client_settings), methods=['POST'])
         for api, method in api_list.items():
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 

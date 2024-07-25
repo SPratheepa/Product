@@ -28,6 +28,7 @@ class Indexing_Service:
 
     def __init__(self,logger,db,key_set_map,key_set_index_map,config:Config):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.index_folder = config.index_folder
             self.collection = db[COLLECTIONS.ATS_CANDIDATE_DETAILS]
             self.search_history_collection = db[COLLECTIONS.ATS_SEARCH_HISTORY]

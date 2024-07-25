@@ -31,6 +31,7 @@ class UI_Template_Service():
 
     def __init__(self,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.key_nested_key_map = keyset_map         
             self.role_key_map = keyset_map.get(COLLECTIONS.MASTER_ROLE, {})
             self.menu_key_map = keyset_map.get(COLLECTIONS.MASTER_MENU, {})

@@ -23,6 +23,7 @@ class Activity_Service:
             self.logger = logger
             #self.common_service = Common_Service(logger,db,keyset_map)
             self.key_map = keyset_map[COLLECTIONS.MASTER_ACTIVITY_DETAILS]
+            self.initialized = True
             
     def save_activity(self, activity_request, identity_data,db):
         identity_data_obj = ACCESS_TOKEN(**identity_data)

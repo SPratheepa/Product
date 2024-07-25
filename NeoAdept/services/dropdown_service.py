@@ -15,6 +15,7 @@ class Dropdown_Service():
 
     def __init__(self,logger,db,keyset_map,filters):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.keyset_map = keyset_map
             self.filters = filters

@@ -667,23 +667,13 @@ class Utility:
                 "from": {
                     "email": from_email
                 },
-                "to": []
+                "to": [{"email": email} for email in to_email]
             }
         }
     
-        # If to_email is a list of emails
-        if isinstance(to_email, list):
-            for email in to_email:
-                recipient = {"email": email}
-                if to_name:
-                    recipient["name"] = to_name
-                data["email"]["to"].append(recipient)
-        # If to_email is a single email
-        else:
-            recipient = {"email": to_email}
-            if to_name:
+        if to_name:
+            for recipient in data["email"]["to"]:
                 recipient["name"] = to_name
-            data["email"]["to"].append(recipient)
         return data
 
     @staticmethod

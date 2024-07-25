@@ -33,6 +33,7 @@ class Login_Service:
 
     def __init__(self,config:Config,logger,db,keyset_map,session):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.ui_template_service=UI_Template_Service(logger,db,keyset_map)
             self.ui_template_service_tmp=UI_Template_Service_temp(logger,db,keyset_map)
@@ -85,7 +86,6 @@ class Login_Service:
                 return None
             else:
                 raise Custom_Error('Could not insert product_admin') 
-                       
         raise Custom_Error(CONSTANTS.USER_ALREADY_EXISTS)
         
     def get_db_name(self, origin):
@@ -109,13 +109,10 @@ class Login_Service:
         login_data_request.validate_request()
         
         login_details_obj = USER_DETAILS(**login_data)
-        
         user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
-            
         current_user_obj = self.get_current_user_obj(login_details_obj.email,user_collection)       
         if not (self.password_check(current_user_obj,login_details_obj.password)):
             raise Custom_Error(CONSTANTS.INVALID_PWD)
-         
         db_name = self.mongo_client[db_name]
         return self.frame_login_response(current_user_obj,user_collection,db_name,True,None,login_details_obj)
         
@@ -156,7 +153,7 @@ class Login_Service:
             combined_widget = self.get_combined_widget(current_user_obj, db)
             user_data = self.prepare_user_data(current_user_obj,combined_permissions,client_obj,client_db_name,combined_widget)
             access_token = create_access_token(identity = user_data,expires_delta = False)
-           
+
             if access_token:
                 self.update_user_token_in_collection(current_user_obj.email, access_token, Utility.get_current_time(), user_collection)
                 enabled_column_list = self.get_column_visibility(current_user_obj._id,db)
@@ -340,7 +337,7 @@ class Login_Service:
         user_collection = self.mongo_client[db_name][COLLECTIONS.MASTER_USER_DETAILS]
                 
         current_user_obj = self.get_current_user_obj(login_details_obj.email,user_collection)
-       
+
         otp = current_user_obj.otp
         otp_timestamp = current_user_obj.otp_timestamp
         if otp_timestamp is None:
@@ -362,7 +359,7 @@ class Login_Service:
                     
                 raise Custom_Error(CONSTANTS.INVALID_OTP)
         raise Custom_Error(CONSTANTS.OTP_EXP)
-         
+
     def compare_time(self,otp_timestamp):
                 
         current_timestamp = datetime.strptime(Utility.get_current_timestamp(), "%Y-%m-%d %H:%M:%S.%f")
@@ -398,7 +395,7 @@ class Login_Service:
                 
                 raise Custom_Error(CONSTANTS.PWD_RESET_FAIL)
         raise Custom_Error(CONSTANTS.INVALID_PWD)
-   
+
     def auth_login(self,identity_data,db):
         
         identity_data_obj = ACCESS_TOKEN(**identity_data)

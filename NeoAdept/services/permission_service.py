@@ -23,6 +23,7 @@ class Permission_Service:
 
     def __init__(self,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.keyset_map = keyset_map
             self.key_map = self.keyset_map[COLLECTIONS.MASTER_ROLE_PERMISSION]

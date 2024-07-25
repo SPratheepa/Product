@@ -31,6 +31,7 @@ class Register_Service:
 
     def __init__(self,config:Config,logger,db,keyset_map):
         if not hasattr(self, 'initialized'):
+            self.initialized = True
             self.logger = logger
             self.config = config
             self.db = db
