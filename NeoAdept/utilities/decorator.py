@@ -7,6 +7,7 @@ from flask_jwt_extended import get_jwt, get_jwt_identity
 
 from NeoAdept.config import Config
 from NeoAdept.gbo.common import Custom_Error
+from NeoAdept.utilities.collection_names import COLLECTIONS
 from NeoAdept.utilities.constants import CONSTANTS
 
 from ..utilities.utility import Utility
@@ -40,7 +41,7 @@ def check_jwt_token(view_func,db,config:Config,session):
             
             token = auth_header.split(" ")[1]  # Assuming the format is "Bearer <token>"
             
-            response = DB_Utility.check_token(token,get_jwt_identity()["email"],db["USER_DETAILS"])
+            response = DB_Utility.check_token(token,get_jwt_identity()["email"],db[COLLECTIONS.MASTER_USER_DETAILS])
             
             if response is not None:
                 return response
