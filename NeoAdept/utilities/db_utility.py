@@ -329,11 +329,11 @@ class DB_Utility:
         return doc.keys()
     
     def check_token(token,email,user_collection):
-            query = {"email": email}
-            current_user = Mongo_DB_Manager.read_one_document(user_collection,query)
-            if current_user and current_user.get('token') != token:
-                return Base_Response(status=CONSTANTS.FAILED,status_code=403,message="Please login again").__dict__
-            return None
+        query = {"email": email}
+        current_user = Mongo_DB_Manager.read_one_document(user_collection,query)
+        if current_user and current_user.get('token') != token:
+            return Base_Response(status=CONSTANTS.FAILED,status_code=403,message="Please login again").__dict__
+        return None
     
     @staticmethod
     def check_id_exists(id_list,collection) :
@@ -528,16 +528,13 @@ class DB_Utility:
         )
     @staticmethod
     def check_permissions(permissions,api_name,module_details_map):
-        
         for module_name, module_details in module_details_map.items():
+            if module_details["module"].lower().replace(' ','_') not in permissions:
+                return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
             for access_entry in module_details.get('access', []):
                 if api_name == access_entry['api_name']:
-                    if module_name not in permissions:
-                        return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
-                
-                    required_permission = access_entry['submodule_name']
-                    user_permissions = permissions[module_name]
-                
+                    required_permission = access_entry['submodule_name'].lower().replace(' ','_')
+                    user_permissions = permissions[module_name.lower().replace(' ','_')]
                     if not user_permissions.get(required_permission, False):
                         return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
         return None

@@ -42,6 +42,7 @@ class Common_Service:
             self.recent_search_id_map = {"CONTACT_DETAILS_VIEW": "contact_id"}
             self.key_module_map = self.keyset_map[COLLECTIONS.MASTER_MODULE_DETAILS]
             self.attachment_folder = self.directory.create_folder('attachment')
+            self.update_module_details()# only for one time update use
     
     def upload_attachments(self,request,db):
         module_type = request.form.get('type')
@@ -128,6 +129,7 @@ class Common_Service:
         
         access_details = [ACCESS_DETAILS(**ad).to_dict() for ad in module_info.get('access', [])]
         module = module_info.get('module')
+        module_name = module.lower().replace(' ','_')
         current_time = Utility.get_current_time()
         
         module_details_obj = MODULE_DETAILS(
@@ -151,17 +153,25 @@ class Common_Service:
         
             role_permission = Mongo_DB_Manager.read_one_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION],{'role_id': role_id})
             
-            module_permissions = {ad['submodule_name']: False for ad in module_info.get('access', [])}
+            #module_permissions = {ad['submodule_name']: False for ad in module_info.get('access', [])}
+            module_permissions = {"name":module}
+            for ad in module_info.get('access', []):
+                sub_module_permissions = {}
+                sub_module_permissions['name']= module
+                sub_module_permissions['value']= "default" 
+                module_permissions[ad["api_name"]] = sub_module_permissions
+            query = {'_id':user['_id']}
+            update = {f'permissions.{module_name}': module_permissions}
             
             if role_permission:
-                role_permission['permissions'][module] = module_permissions         
+                role_permission['permissions'][module_name] = module_permissions         
                 Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_ROLE_PERMISSION],{'_id': role_permission['_id']},{'permissions': role_permission['permissions']})
             else:
                 new_role_permission = {
                                         'role_id': role_id,
                                         'role_name': role_name,
                                         'permissions': {
-                                            module: module_permissions
+                                            module_name: module_permissions
                                         },
                                         'created_by': "admin",
                                         'created_on': current_time
@@ -172,11 +182,17 @@ class Common_Service:
         users = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_USER_DETAILS],query)
         for user in users:
             user_id = DB_Utility.obj_id_to_str(user['_id'])           
-            user_permissions = {ad['submodule_name']: "default" for ad in module_info.get('access', [])}
+            #user_permissions = {ad['submodule_name']: "default" for ad in module_info.get('access', [])}
+            user_permissions = {"name":module}
+            for ad in module_info.get('access', []):
+                sub_module_permissions = {}
+                sub_module_permissions['name']= module
+                sub_module_permissions['value']= "default" 
+                user_permissions[ad["api_name"]] = sub_module_permissions
             query = {'_id':user['_id']}
-            update = {f'permissions.{module}': user_permissions}
+            update = {f'permissions.{module_name}': user_permissions}
+            print(update)
             Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_USER_DETAILS],query,update)
-            
         
     def get_module_details(self,identity_data,request_data,db):
         
@@ -310,7 +326,7 @@ class Common_Service:
     
         return submodule_permissions
                 
-    def add_user_permission_for_user(self, user_id, email,db):
+    '''def add_user_permission_for_user(self, user_id, email,db):
         module_info = Mongo_DB_Manager.read_documents(db[COLLECTIONS.MASTER_MODULE_DETAILS], {})
         permissions = {}
         for module in module_info:
@@ -319,7 +335,7 @@ class Common_Service:
         query = {'_id': DB_Utility.str_to_obj_id(user_id)}
         update_query = {'permissions': permissions, 'updated_by': email, 'created_on': Utility.get_current_time()}
     
-        modified_count = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_USER_DETAILS],query,update_query)
+        modified_count = Mongo_DB_Manager.update_document(db[COLLECTIONS.MASTER_USER_DETAILS],query,update_query)'''
         
     def get_document(self,folder,filename):
         
@@ -634,3 +650,21 @@ class Common_Service:
         if data:
             return DB_Utility.convert_object_ids_to_strings(list(data)),count 
         raise Custom_Error("No Data Found")
+    
+    def update_module_details(self):
+        mod_details_docs = Mongo_DB_Manager.read_documents(self.db[COLLECTIONS.MASTER_MODULE_DETAILS],{})
+        permissions = {}
+        for module_info in mod_details_docs:
+            module = module_info.get('module')
+            module_permissions = {"name":module}
+            for ad in module_info.get('access', []):
+                sub_module_permissions = {}
+                sub_module_permissions['name']= ad["submodule_name"] 
+                sub_module_permissions['value']= True 
+                module_permissions[ad["api_name"]] = sub_module_permissions
+            module_name = module.lower().replace(' ','_')
+            permissions[module_name] = module_permissions 
+        print(Mongo_DB_Manager.update_document(self.db[COLLECTIONS.MASTER_ROLE_PERMISSION],{},{'permissions': permissions}))                
+        print(Mongo_DB_Manager.update_document(self.db[COLLECTIONS.MASTER_USER_DETAILS],{},{'permissions':permissions}))
+        
+            

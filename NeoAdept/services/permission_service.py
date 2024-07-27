@@ -1,16 +1,16 @@
-from NeoAdept.gbo.bo import Pagination
-from NeoAdept.pojo.permission_details import ROLE_PERMISSION
-
-from NeoAdept.pojo.user_details import USER_DETAILS
-from NeoAdept.pojo.access_token import ACCESS_TOKEN
-from NeoAdept.utilities.collection_names import COLLECTIONS
-from NeoAdept.utilities.constants import CONSTANTS
-from ..gbo.common import Custom_Error
-from ..utilities.utility import Utility
-from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from flask import current_app
 from flask_jwt_extended import get_jwt
 import jwt
+
+from ..gbo.bo import Pagination
+from ..pojo.permission_details import ROLE_PERMISSION
+from ..pojo.user_details import USER_DETAILS
+from ..pojo.access_token import ACCESS_TOKEN
+from ..utilities.collection_names import COLLECTIONS
+from ..utilities.constants import CONSTANTS
+from ..gbo.common import Custom_Error
+from ..utilities.utility import Utility
+from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 
 class Permission_Service:  
     _instance = None  # Class variable to store the singleton instance
@@ -110,8 +110,6 @@ class Permission_Service:
                 except jwt.DecodeError:
                     self.logger.error(f"Failed to decode token for user {DB_Utility.obj_id_to_str(user_info['_id'])}")
         
-
-    
     def save_role_permission(self,identity_data,data,db): 
         
         data_obj = ROLE_PERMISSION(**data) 

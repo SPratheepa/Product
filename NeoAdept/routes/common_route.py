@@ -14,7 +14,7 @@ class Common_Route(Blueprint):
 
     def __init__(self, name, import_name,config, logger, db, keyset_map, session):
         super(Common_Route, self).__init__(name, import_name)
-        #self.common_service = Common_Service(logger,db,keyset_map)
+        self.common_service = Common_Service(logger,db,keyset_map)
         self.logger = logger
         self.db = db
         self.config = config

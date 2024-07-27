@@ -147,7 +147,6 @@ class Login_Service:
         combined_widget = self.get_combined_widget(current_user_obj, db)
         user_data = self.prepare_user_data(current_user_obj, combined_permissions, client_obj, client_db_name, combined_widget)
         access_token = create_access_token(identity=user_data, expires_delta=False)
-
         if access_token:
             self.update_user_token_in_collection(current_user_obj.email, access_token, Utility.get_current_time(), user_collection)
             enabled_column_list = self.get_column_visibility(current_user_obj._id, db)
@@ -467,7 +466,6 @@ class Login_Service:
         
         # Fetch role permissions
         role_permissions = self.get_role_permissions(role_name, db_name)
-           
         # If there are no user permissions, return role permissions as combined permissions
         if not user_permissions:
             return role_permissions
@@ -497,26 +495,20 @@ class Login_Service:
                 for permission, role_perm_value in role_module_perms.items():
                     if permission not in combined_module_perms:
                         combined_module_perms[permission] = role_perm_value
-        
         return combined_permissions
   
     def get_column_visibility(self, user_id,db): 
-        #print("column_visibility==========",user_id,db)      
         document = db["MASTER_COLUMN_VISIBILITY"].find_one()      
         if document:
             document.pop("_id")       
-            doc_keys = document.keys()      
-            #print("doc_keys==========",doc_keys)           
+            doc_keys = document.keys()                 
         user_document = Mongo_DB_Manager.read_one_document(db["MASTER_USER_DETAILS"],{'_id': DB_Utility.str_to_obj_id(user_id)})     
-        #print("user_document==",user_document)
         if user_document:            
             user_document.pop("_id")  
             if "visibility" in user_document and user_document["visibility"]:  
                 visibility_doc = user_document["visibility"]  
-                #print("visibility_doc==",visibility_doc)   
                 for key, value in visibility_doc.items():
                     if key in doc_keys:
-                        #print(key,"..........",value["columns"])
                         if "columns" in value and value["columns"]:
                             for update_item in value["columns"]:
                                 db_column = update_item["db_column"]
