@@ -530,12 +530,11 @@ class DB_Utility:
     def check_permissions(permissions,api_name,module_details_map):
         for module_name, module_details in module_details_map.items():
             if module_details["module"].lower().replace(' ','_') not in permissions:
-                return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
+                    return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
             for access_entry in module_details.get('access', []):
                 if api_name == access_entry['api_name']:
-                    required_permission = access_entry['submodule_name'].lower().replace(' ','_')
                     user_permissions = permissions[module_name.lower().replace(' ','_')]
-                    if not user_permissions.get(required_permission, False):
+                    if not user_permissions.get(api_name, False):
                         return Base_Response(status=CONSTANTS.FAILED, status_code=405, message="Insufficient permissions").__dict__
         return None
     
