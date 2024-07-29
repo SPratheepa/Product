@@ -97,7 +97,6 @@ class NeoAdeptApp:
             Module_Permission(self.config.role_permission_file).load_module_details(self.db)
         
         self.app.module_details_map = self.load_module_details()
-        
         if self.config.CLIENT_ENV == CONSTANTS.CLIENT and Mongo_DB_Manager.is_collection_empty(self.db[COLLECTIONS.MASTER_WIDGET]):
             Menu_Widget(self.config.ui_template_file).load_widget_menu(self.db)
             key_generator(self.db)
