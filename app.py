@@ -24,7 +24,7 @@ from NeoAdept.routes.feedback_route import Feedback_Route
 from NeoAdept.utilities.utility import Utility
 from NeoAdept.utilities.db_utility import Collection_Manager,DB_Utility,Mongo_DB_Manager, SQL_Connection_Manager, SQL_Utility
 from NeoAdept.utilities.constants import CONSTANTS
-from NeoAdept.routes.ui_template_route import UI_Template_Route
+from NeoAdept.routes.prod_ctrl import Prod_Ctrl_Route
 from NeoAdept.routes.login_route import Login_Route
 from NeoAdept.routes.client_route import Client_Route
 from NeoAdept.routes.user_route import User_Route
@@ -206,7 +206,7 @@ class NeoAdeptApp:
             self.app.register_blueprint(blueprint, url_prefix=f"{versioned_prefix}/{route_name}")
         
         routes_without_extra_args = [
-            User_Route,Client_Route, Feedback_Route, UI_Template_Route,  
+            User_Route,Client_Route, Feedback_Route, Prod_Ctrl_Route,  
             My_List_Route, Activity_Route,  Common_Route, Email_Route, 
             Register_Route, Permission_Route
         ]

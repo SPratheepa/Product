@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required,  get_jwt_identity, get_jwt
 from ..gbo.bo import Base_Response
 from ..gbo.common import Custom_Error
 from ..product_admin.login_service import Login_Service
-#from ..services.UI_template_service import UI_Template_Service
+#from ..services.UI_template_service import PROD_Ctrl_Service
 from ..utilities.utility import Utility
 from ..utilities.constants import CONSTANTS
 from ..utilities.decorator import check_blacklisted_token,check_jwt_token
@@ -12,7 +12,7 @@ from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 class LoginController:
     def __init__(self,config,logger,db,client_db):
         self.login_service = Login_Service(config,logger,db,client_db)
-        #self.ui_template_service = UI_Template_Service(logger)        
+        #self.ui_template_service = PROD_Ctrl_Service(logger)        
         self.logger = logger
                
     def get_instance(self): 

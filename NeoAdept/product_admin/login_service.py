@@ -10,7 +10,7 @@ from ..pojo.access_token import ACCESS_TOKEN
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
 from ..pojo.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
-#from..services.UI_template_service import UI_Template_Service
+#from..services.UI_template_service import PROD_Ctrl_Service
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..requests.login_request import forgot_password_request, login_request,create_product_admin_request,verify_otp_request,change_password_request
 from ..gbo.common import Custom_Error
@@ -20,7 +20,7 @@ class Login_Service:
     def __init__(self,config,logger,db,client_db):
         
         self.logger = logger
-        #self.ui_template_service=UI_Template_Service(logger)
+        #self.ui_template_service=PROD_Ctrl_Service(logger)
         self.config = config
         self.db = db
         self.client_db = client_db

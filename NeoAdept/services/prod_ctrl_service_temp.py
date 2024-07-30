@@ -22,7 +22,7 @@ from ..requests.role_request import create_role_request
 from ..utilities.db_utility import Mongo_DB_Manager,DB_Utility
 from ..utilities.utility import Utility
 
-class UI_Template_Service_temp():  
+class PROD_Ctrl_Service_temp():  
     _instance = None  # Class variable to store the singleton instance
     
     def __new__(cls, *args, **kwargs):

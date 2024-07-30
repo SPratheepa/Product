@@ -12,8 +12,8 @@ from ..pojo.user_details import USER_DETAILS
 from ..pojo.access_token import ACCESS_TOKEN
 from ..pojo.client_details import CLIENT_DETAILS,SUBSCRIPTION_DETAILS
 from ..requests.login_request import forgot_password_request, login_request,create_product_admin_request, verify_otp_request,change_password_request
-from ..services.ui_template_service import UI_Template_Service
-from ..services.ui_template_service_temp import UI_Template_Service_temp
+from ..services.prod_ctrl_service import PROD_Ctrl_Service
+from .prod_ctrl_service_temp import PROD_Ctrl_Service_temp
 from ..utilities.db_utility import DB_Utility, Mongo_DB_Manager
 from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
@@ -31,8 +31,8 @@ class Login_Service:
         if not hasattr(self, 'initialized'):
             self.initialized = True
             self.logger = logger
-            self.ui_template_service=UI_Template_Service(logger,db,keyset_map)
-            self.ui_template_service_tmp=UI_Template_Service_temp(logger,db,keyset_map)
+            self.ui_template_service=PROD_Ctrl_Service(logger,db,keyset_map)
+            self.ui_template_service_tmp=PROD_Ctrl_Service_temp(logger,db,keyset_map)
             self.config = config
             self.db = db
             self.mongo_client = MongoClient(self.config.db_url,maxPoolSize=self.config.max_pool_size)

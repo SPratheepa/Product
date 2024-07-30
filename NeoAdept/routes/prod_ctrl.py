@@ -6,21 +6,21 @@ from NeoAdept.utilities.db_utility import DB_Utility
 
 from ..pojo.access_token import ACCESS_TOKEN
 from ..gbo.common import Custom_Error
-from ..services.ui_template_service import UI_Template_Service
-from ..services.ui_template_service_temp import UI_Template_Service_temp
+from ..services.prod_ctrl_service import PROD_Ctrl_Service
+from ..services.prod_ctrl_service_temp import PROD_Ctrl_Service_temp
 from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 from ..utilities.utility import Utility
 from ..utilities.constants import CONSTANTS
 
-class UI_Template_Route(Blueprint):
+class Prod_Ctrl_Route(Blueprint):
 
     def __init__(self, name, import_name, config, logger, db,keyset_map,session):
-        super(UI_Template_Route, self).__init__(name, import_name)
+        super(Prod_Ctrl_Route, self).__init__(name, import_name)
         self.db = db
         self.config = config
         self.session = session
-        self.ui_template_service = UI_Template_Service(logger,db,keyset_map)
-        self.ui_template_service_tmp = UI_Template_Service_temp(logger,db,keyset_map)
+        self.ui_template_service = PROD_Ctrl_Service(logger,db,keyset_map)
+        self.ui_template_service_tmp = PROD_Ctrl_Service_temp(logger,db,keyset_map)
         self.logger = logger
         self.config = config
         

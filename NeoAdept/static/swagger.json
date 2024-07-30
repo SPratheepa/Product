@@ -2167,7 +2167,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upsert_role": {
+    "/prod/v1/prod_ctrl/upsert_role": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update Roles ",
@@ -2260,7 +2260,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upsert_widget": {
+    "/prod/v1/prod_ctrl/upsert_widget": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update widgets ",
@@ -2369,7 +2369,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upsert_page": {
+    "/prod/v1/prod_ctrl/upsert_page": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update pages ",
@@ -2478,7 +2478,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upsert_sub_menu": {
+    "/prod/v1/prod_ctrl/upsert_sub_menu": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "Add or Update sub_menu ",
@@ -2579,7 +2579,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upsert_menu": {
+    "/prod/v1/prod_ctrl/upsert_menu": {
       "post": {
         "tags": [ "UI Template Routes" ],
         "summary": "upsert Menu ",
@@ -2675,7 +2675,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_role": {
+    "/prod/v1/prod_ctrl/delete_role": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2730,7 +2730,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_widget": {
+    "/prod/v1/prod_ctrl/delete_widget": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2785,7 +2785,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_page": {
+    "/prod/v1/prod_ctrl/delete_page": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2840,7 +2840,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_menu": {
+    "/prod/v1/prod_ctrl/delete_menu": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2895,7 +2895,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_sub_menu": {
+    "/prod/v1/prod_ctrl/delete_sub_menu": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -2950,7 +2950,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/delete_ui_template": {
+    "/prod/v1/prod_ctrl/delete_prod_ctrl": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3011,7 +3011,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/get_roles": {
+    "/prod/v1/prod_ctrl/get_roles": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3287,7 +3287,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/get_menus": {
+    "/prod/v1/prod_ctrl/get_menus": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3548,7 +3548,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/get_sub_menus": {
+    "/prod/v1/prod_ctrl/get_sub_menus": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3739,7 +3739,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/get_pages": {
+    "/prod/v1/prod_ctrl/get_pages": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -3915,7 +3915,7 @@
         }
       }
     },
-    "/prod/v1//ui_template/get_widgets": {
+    "/prod/v1//prod_ctrl/get_widgets": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -4064,7 +4064,7 @@
         }
       }
     },
-    "/prod/v1/ui_template/upload_excel_data": {
+    "/prod/v1/prod_ctrl/upload_excel_data": {
       "post": {
         "tags": [
           "UI Template Routes"
@@ -4086,7 +4086,7 @@
             "name": "file",
             "in": "formData",
             "type": "array",
-            "description": "input ui_template gadget",
+            "description": "input prod_ctrl gadget",
             "required": true,
             "items": {
               "type": "file"
@@ -4096,7 +4096,7 @@
             "name": "type",
             "in": "formData",
             "type": "string",
-            "description": "type of ui_template_data",
+            "description": "type of prod_ctrl_data",
             "required": true,
             "items": {
               "type": "Text"
@@ -4105,7 +4105,7 @@
         ],
         "responses": {
           "200": {
-            "description": "ui_template uploaded successfully",
+            "description": "prod_ctrl uploaded successfully",
             "content": {
               "application/json": {
                 "schema": {
