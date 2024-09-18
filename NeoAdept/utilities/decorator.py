@@ -57,11 +57,11 @@ def check_jwt_token(view_func,db,config:Config,session):
             if api_name.startswith("get_doc"):
                 api_name = "get_doc"
             if api_name not in CONSTANTS.IGNORE_PERMISSION_API_LIST:
-                print("session...",session)
+                #print("session...",session)
                 redis_client = current_app.config['SESSION_REDIS']
                 ud = redis_client.get(f"user:{email}")
                 s =json.loads(ud)
-                print("s...",s)
+                #print("s...",s)
                 if s["permissions"] is None:
                     return Base_Response(status=CONSTANTS.FAILED, status_code=403, message="Session expired.Please log in again").__dict__
                     #return Utility.generate_error_response("Session expired.Please log in again")
