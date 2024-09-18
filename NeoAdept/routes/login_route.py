@@ -1,4 +1,4 @@
-from flask import Blueprint, request, current_app,g
+from flask import Blueprint, request, current_app,g,session
 from flask_jwt_extended import jwt_required,  get_jwt_identity, get_jwt
 
 from ..gbo.bo import Base_Response
@@ -8,15 +8,17 @@ from ..utilities.utility import Utility
 from ..utilities.constants import CONSTANTS
 from ..utilities.decorator import check_blacklisted_token,check_jwt_token,decrypt_request
 
+import json
+
 class Login_Route(Blueprint):
-    def __init__(self, name, import_name,config,logger,db,keyset_map,session,server_private_key,decryption_apis):
+    def __init__(self, name, import_name,config,logger,db,keyset_map,server_private_key,decryption_apis):
         super(Login_Route, self).__init__(name, import_name)
         self.server_private_key = server_private_key
         self.decryption_apis = decryption_apis
         self.logger = logger
         self.config = config
         self.db = db
-        self.session = session
+        
         self.login_service = Login_Service(config,logger,db,keyset_map,session)
                 
         self.route('/get_instance',methods = ['GET']) (self.get_instance)
@@ -32,10 +34,10 @@ class Login_Route(Blueprint):
         self.route('/auth_login', methods=['POST']) ( self.secure_decrypt_route(self.auth_login))
     
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def secure_decrypt_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(decrypt_request(check_jwt_token(view_func, self.db, self.config, self.session), self.server_private_key, self.decryption_apis)))
+        return jwt_required()(check_blacklisted_token(decrypt_request(check_jwt_token(view_func, self.db, self.config, session), self.server_private_key, self.decryption_apis)))
     
     def get_instance(self): 
         try:
@@ -56,11 +58,15 @@ class Login_Route(Blueprint):
             json_current_user_modified,access_token = self.login_service.login(request_data,origin)
             response = Base_Response(status=CONSTANTS.SUCCESS,status_code=CONSTANTS.SUCCESS_STATUS_CODE,message=CONSTANTS.DRS,data=json_current_user_modified)
             response.token = access_token
+            json_string = json.dumps(response.__dict__)
+            data = json.loads(json_string)
             return response.__dict__
         except Custom_Error as e:
+            print(str(e))
             self.logger.error(e)
             return Utility.generate_error_response(str(e))
         except Exception as e:
+            print(str(e))
             self.logger.error(e)
             return Utility.generate_exception_response(e)   
     

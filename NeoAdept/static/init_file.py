@@ -30,7 +30,7 @@ from NeoAdept.utilities.utility import Utility
 from NeoAdept.utilities.db_utility import Collection_Manager,DB_Utility,Mongo_DB_Manager
 from NeoAdept.utilities.constants import CONSTANTS
 from NeoAdept.routes.candidate_route import Candidate_Route
-from NeoAdept.routes.ui_template_route import UI_Template_Route
+from NeoAdept.routes.Prod_Ctrl_Route import Prod_Ctrl_Route
 from NeoAdept.routes.job_route import Job_Route
 from NeoAdept.routes.login_route import Login_Route
 from NeoAdept.routes.client_route import Client_Route

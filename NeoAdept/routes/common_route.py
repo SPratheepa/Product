@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, request,g
+from flask import Blueprint, request,g,session
 from NeoAdept.utilities.db_utility import DB_Utility
 from NeoAdept.utilities.module_permission import Module_Permission
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -12,13 +12,13 @@ from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 
 class Common_Route(Blueprint):
 
-    def __init__(self, name, import_name,config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name,config, logger, db, keyset_map):
         super(Common_Route, self).__init__(name, import_name)
         self.common_service = Common_Service(logger,db,keyset_map)
         self.logger = logger
         self.db = db
         self.config = config
-        self.session = session
+        
 
         api_list = {
             '/upload_attachments': self.upload_attachments,
@@ -40,7 +40,7 @@ class Common_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def upload_attachments(self):
         try:            

@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request,session
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..pojo.access_token import ACCESS_TOKEN
@@ -11,13 +11,13 @@ from ..utilities.decorator import check_blacklisted_token, check_jwt_token
 
 class Feedback_Route(Blueprint):
 
-    def __init__(self, name, import_name, logger, db, config, keyset_map, session):
+    def __init__(self, name, import_name, logger, db, config, keyset_map):
         super(Feedback_Route, self).__init__(name, import_name)
         self.feedback_service = Feedback_Service(logger,db,config,keyset_map)
         self.logger = logger
         self.db = db
         self.config = config
-        self.session = session
+        
 
         api_list = {
             '/create_feedback': self.create_feedback,
@@ -29,7 +29,7 @@ class Feedback_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def create_feedback(self):
         try:

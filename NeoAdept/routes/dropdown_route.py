@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request,session
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from NeoAdept.pojo.access_token import ACCESS_TOKEN
@@ -12,13 +12,13 @@ from ..utilities.decorator import check_blacklisted_token, check_jwt_token
 
 class Dropdown_Route(Blueprint):
 
-    def __init__(self, name, import_name, config,logger,db, keyset_map,session, filters):
+    def __init__(self, name, import_name, config,logger,db, keyset_map, filters):
         super(Dropdown_Route, self).__init__(name, import_name)
         self.dropdown_service = Dropdown_Service(logger,db,keyset_map,filters)
         self.logger = logger
         self.db = db
         self.config = config
-        self.session = session
+        
         
         api_list = {
             '/dropdown_list': self.dropdown_list,
@@ -29,7 +29,7 @@ class Dropdown_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def dropdown_list(self):
         try:

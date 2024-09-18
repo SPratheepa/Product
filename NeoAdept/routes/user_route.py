@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g,request
+from flask import Blueprint, g,request,session
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..gbo.common import Custom_Error
 from ..services.user_service import User_Service
@@ -10,11 +10,11 @@ from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 
 class User_Route(Blueprint):
 
-    def __init__(self, name, import_name, config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name, config, logger, db, keyset_map):
         super(User_Route, self).__init__(name, import_name)
         self.db = db
         self.config = config
-        self.session = session
+        
         self.logger = logger
         self.user_service = User_Service(config,logger,db,keyset_map)
         
@@ -29,7 +29,7 @@ class User_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def save_user(self):
         try:

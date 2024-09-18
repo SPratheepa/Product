@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, g, jsonify, request,session
 from NeoAdept.utilities.db_utility import DB_Utility
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -12,14 +12,14 @@ from ..utilities.utility import Utility
 
 class Activity_Route(Blueprint):
 
-    def __init__(self, name, import_name,config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name,config, logger, db, keyset_map):
         super(Activity_Route, self).__init__(name, import_name)
         self.activity_service = Activity_Service(keyset_map,logger,db)
         self.logger = logger
         self.db = db
         self.config = config
         self.previous_request_data = {}
-        self.session = session
+        
 
         api_list = {
             '/save_activity': self.save_activity,
@@ -32,7 +32,7 @@ class Activity_Route(Blueprint):
 
     def secure_route(self, view):
         # Wrap the view with the necessary decorators
-        return jwt_required()(check_blacklisted_token(partial(check_jwt_token, db=self.db, config=self.config, session=self.session)(view)))
+        return jwt_required()(check_blacklisted_token(partial(check_jwt_token, db=self.db, config=self.config, session=session)(view)))
 
     def save_activity(self):
         try:

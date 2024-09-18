@@ -174,7 +174,7 @@ class My_List_Service():
         identity_data_obj = ACCESS_TOKEN(**identity_data)
         pagination = Pagination(**request_data) 
         ##self.common_service.create_log_details(identity_data_obj.email,request_data,"get_group_list",db)
-        list_collection = db[COLLECTIONS.ATS_LIST_GROUPn]
+        list_collection = db[COLLECTIONS.ATS_LIST_GROUP]
         query = DB_Utility.frame_get_query(pagination,self.key_map)
         docs,count = Mongo_DB_Manager.get_paginated_data1(list_collection,query,pagination) 
         if docs and len(docs)>0:

@@ -16,7 +16,7 @@ class Dynamic_DB_Service:
         if not hasattr(self, 'initialized'):
             self.logger = logger
             self.keyset_map_dt = keyset_map_dt
-            self.session = session
+            
             self.sql_table_list = sql_table_list
             self.operators_map = {
                 "bool": ["=", "!="],
@@ -35,10 +35,10 @@ class Dynamic_DB_Service:
             self.initialized = True
     
     def get_collection_list(self, request_data, db):
-        if self.session.widget_enable_for_db is None:
+        if session.widget_enable_for_db is None:
             return Base_Response(status=CONSTANTS.FAILED, status_code=403, message="Session expired.Please log in again").__dict__
             
-        widget_enable_for_db = self.session.widget_enable_for_db
+        widget_enable_for_db = session.widget_enable_for_db
         sample_docs = Mongo_DB_Manager.read_documents(db[COLLECTIONS.CONFIG_sample],{"key": {"$exists": True}})
         sample_map = {doc['key']: doc['collection_description'] for doc in sample_docs}
         

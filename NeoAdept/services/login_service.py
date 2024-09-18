@@ -1,7 +1,7 @@
 ﻿import random,string,bcrypt
 
 from datetime import datetime
-from flask import Config, json,current_app
+from flask import Config, json,current_app,session
 from flask_jwt_extended import create_access_token,get_jwt
 from pymongo import MongoClient
 
@@ -39,7 +39,7 @@ class Login_Service:
             self.neo_db =  self.mongo_client[self.config.neo_db]
             self.keyset_map = keyset_map
             #self.common_service = Common_Service(logger,db,keyset_map)
-            self.session = session
+            
             
         
     def create_product_admin(self,request_data):
@@ -175,11 +175,15 @@ class Login_Service:
         if result == 0:
             raise Custom_Error('Token not updated in collection')
     
+    def store_user_data(self,user_id, permissions,combined_widget):
+        redis_client = current_app.config['SESSION_REDIS']
+        redis_client.set(f"user:{user_id}", json.dumps({"permissions":permissions,"widget_enable_for_db":combined_widget}))
+
     def prepare_user_data(self, current_user_obj,permissions=None,client_obj=None,client_db_name = None,combined_widget=None):
         db_name = client_obj.db_name 
-        self.session.permissions = permissions
-        self.session.widget_enable_for_db = combined_widget
-        
+        session["permissions"] = permissions
+        session["widget_enable_for_db"] = combined_widget
+        self.store_user_data(current_user_obj.email,permissions,combined_widget)
         access_token_data = ACCESS_TOKEN(
                                 email=current_user_obj.email,
                                 phone=current_user_obj.phone,
@@ -191,7 +195,7 @@ class Login_Service:
                                 #permissions = permissions,
                                 #widget_enable_for_db = combined_widget
                             )
-        
+        print("sesion--------------------------------------------",session)
         return access_token_data.__dict__
     
     def get_db_by_domain(self, domain):

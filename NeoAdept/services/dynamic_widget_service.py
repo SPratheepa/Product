@@ -36,7 +36,7 @@ class Dynamic_widget_Service:
                 }
         #self.common_service = Common_Service(logger,db,keyset_map)
         self.key_map = self.keyset_map[COLLECTIONS.MASTER_DYNAMIC_WIDGET ]
-        self.session = session
+        
         self.sql_db = sql_db
 
     def get_dynamic_widget(self,identity_data,request_data,db):
@@ -227,7 +227,7 @@ class Dynamic_widget_Service:
         return generate_query
         
     def generate_dynamic_widget_query(self,identity_data,id,request_data,db):
-        if self.session.widget_enable_for_db is None:
+        if session.widget_enable_for_db is None:
             return Base_Response(status=CONSTANTS.FAILED, status_code=403, message="Session expired.Please log in again").__dict__
         identity_data_obj = ACCESS_TOKEN(**identity_data) 
         _id = DB_Utility.str_to_obj_id(id)
@@ -248,7 +248,7 @@ class Dynamic_widget_Service:
         if not collection_name:
             raise Custom_Error("table not available in query_information")
         
-        widget_enable_for_db = self.session.widget_enable_for_db
+        widget_enable_for_db = session.widget_enable_for_db
         if collection_name not in widget_enable_for_db or not widget_enable_for_db[collection_name].get("widget_enable"):
             raise Custom_Error('The user does not have access to collection')
         

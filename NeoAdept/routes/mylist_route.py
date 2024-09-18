@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request,session
 from NeoAdept.utilities.db_utility import DB_Utility
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -10,13 +10,13 @@ from ..utilities.constants import CONSTANTS
 from ..utilities.utility import Utility
 
 class My_List_Route(Blueprint):
-    def __init__(self, name, import_name, config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name, config, logger, db, keyset_map):
         super(My_List_Route, self).__init__(name, import_name)
         self.list_service = My_List_Service(config,logger,db,keyset_map)
         self.db = db
         self.config = config
         self.logger = logger
-        self.session = session
+        
         
         api_list = {
             '/add_group_list': self.add_group_list,
@@ -33,7 +33,7 @@ class My_List_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def add_group_list(self):
         try:

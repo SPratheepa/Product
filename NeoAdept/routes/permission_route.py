@@ -1,4 +1,4 @@
-from flask import Blueprint, request,g
+from flask import Blueprint, request,g,session
 from NeoAdept.utilities.db_utility import DB_Utility
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.permission_service import Permission_Service
@@ -10,11 +10,11 @@ from ..utilities.decorator import check_blacklisted_token,check_jwt_token
 from functools import partial
 
 class Permission_Route(Blueprint):
-    def __init__(self, name, import_name,config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name,config, logger, db, keyset_map):
         super(Permission_Route, self).__init__(name, import_name)
         self.db = db  # Store the db instance
         self.config = config  # Store the config instance
-        self.session = session
+        
         self.permission_service = Permission_Service(logger,db,keyset_map)
         self.logger = logger
         
@@ -29,7 +29,7 @@ class Permission_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def save_role_permission(self):
         try:

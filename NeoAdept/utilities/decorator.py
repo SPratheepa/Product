@@ -40,8 +40,8 @@ def check_jwt_token(view_func,db,config:Config,session):
                 return Utility.generate_error_response("Authorization header is missing",201)
             
             token = auth_header.split(" ")[1]  # Assuming the format is "Bearer <token>"
-            
-            response = DB_Utility.check_token(token,get_jwt_identity()["email"],db[COLLECTIONS.MASTER_USER_DETAILS])
+            email = get_jwt_identity()["email"]
+            response = DB_Utility.check_token(token,email,db[COLLECTIONS.MASTER_USER_DETAILS])
             
             if response is not None:
                 return response
@@ -57,15 +57,17 @@ def check_jwt_token(view_func,db,config:Config,session):
             if api_name.startswith("get_doc"):
                 api_name = "get_doc"
             if api_name not in CONSTANTS.IGNORE_PERMISSION_API_LIST:
-                
-                if session.permissions is None:
+                print("session...",session)
+                redis_client = current_app.config['SESSION_REDIS']
+                ud = redis_client.get(f"user:{email}")
+                s =json.loads(ud)
+                print("s...",s)
+                if s["permissions"] is None:
                     return Base_Response(status=CONSTANTS.FAILED, status_code=403, message="Session expired.Please log in again").__dict__
                     #return Utility.generate_error_response("Session expired.Please log in again")
-                permissions = session.permissions
-
+                permissions = s["permissions"]
                 module_details_map = current_app.module_details_map
                 response = DB_Utility.check_permissions(permissions,api_name,module_details_map)
-            
                 if response is not None:
                     return response
             

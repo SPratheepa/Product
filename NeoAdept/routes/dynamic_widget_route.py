@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request,session
 from NeoAdept.utilities.db_utility import DB_Utility
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from NeoAdept.gbo.common import Custom_Error
@@ -11,13 +11,13 @@ from NeoAdept.utilities.utility import Utility
 
 class Dynamic_widget_Route(Blueprint):
 
-    def __init__(self, name, import_name,config, logger, db,keyset_map,session, keyset_map_dt, sql_db):
+    def __init__(self, name, import_name,config, logger, db,keyset_map, keyset_map_dt, sql_db):
         super(Dynamic_widget_Route, self).__init__(name, import_name)
         self.dynamic_widget_service = Dynamic_widget_Service(logger,db,keyset_map,keyset_map_dt,session,sql_db)
         self.logger = logger
         self.db = db
         self.config = config
-        self.session = session
+        
         
         api_list = {
             '/save_dynamic_widget': self.save_dynamic_widget,
@@ -31,7 +31,7 @@ class Dynamic_widget_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def get_dynamic_widget(self):
         try:

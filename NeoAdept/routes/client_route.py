@@ -1,5 +1,5 @@
 from functools import partial
-from flask import Blueprint, json, request,g
+from flask import Blueprint, json, request,g,session
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from ..gbo.bo import Base_Response
@@ -12,13 +12,13 @@ from ..utilities.db_utility import DB_Utility
 
 class Client_Route(Blueprint):
 
-    def __init__(self, name, import_name, config, logger, db, keyset_map, session):
+    def __init__(self, name, import_name, config, logger, db, keyset_map):
         super(Client_Route, self).__init__(name, import_name)
         self.client_service = Client_Service(config,logger,db,keyset_map)
         self.logger = logger
         self.db = db
         self.config = config
-        self.session = session
+        
 
         api_list = {
             '/save_client_details': self.save_client_details,
@@ -31,7 +31,7 @@ class Client_Route(Blueprint):
             self.add_url_rule(api, view_func=self.secure_route(method), methods=['POST'])
 
     def secure_route(self, view_func):
-        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, self.session)))
+        return jwt_required()(check_blacklisted_token(check_jwt_token(view_func, self.db, self.config, session)))
 
     def save_client_details(self):
         try:

@@ -1,7 +1,6 @@
 import logging,os,base64
 
-
-from flask import Flask,send_from_directory
+from flask import Flask,send_from_directory,session 
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -34,6 +33,8 @@ from NeoAdept.routes.common_route import Common_Route
 from NeoAdept.routes.email_route import Email_Route
 from NeoAdept.routes.register_route import Register_Route
 from NeoAdept.routes.permission_route import Permission_Route
+
+import redis
 
 class NeoAdeptApp:
     def __init__(self, app_name):
@@ -105,13 +106,13 @@ class NeoAdeptApp:
             self.enable_collections_columns(self.keyset_map, self.db)
     
     def config_session(self,session_lifetime):
-        self.app.config['SESSION_TYPE'] = 'filesystem'  # You can use other types like 'redis' if you have Redis installed
-        self.app.config['SESSION_PERMANENT'] = True
+        self.app.config['SESSION_TYPE'] = 'redis'  # You can use other types like 'redis' if you have Redis installed
+        self.app.config['SESSION_PERMANENT'] = False
         self.app.config['SESSION_USE_SIGNER'] = True
-        self.app.config['PERMANENT_SESSION_LIFETIME'] = session_lifetime  
-        self.session = Session(self.app)  # Initialize the session
-        self.session.permissions = None
-        self.session.widget_enable_for_db = None
+        self.app.config['SESSION_KEY_PREFIX'] = 'prod:'
+        #self.app.config['PERMANENT_SESSION_LIFETIME'] = session_lifetime  
+        self.app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379, db=0)
+        Session(self.app)  # Initialize the session
     
     def load_module_details(self):
         module_details_map = {}
@@ -193,11 +194,11 @@ class NeoAdeptApp:
     def register_blueprints(self):
         versioned_prefix = f"/prod/{self.config.version}"
 
-        common_args = (self.config, self.logger, self.db, self.keyset_map,self.session)
+        common_args = (self.config, self.logger, self.db, self.keyset_map)
         routes_with_extra_args = [
             (Dropdown_Route, ( self.filters,)),
             (Dynamic_DB_Route, (self.keyset_map_dt, self.sql_db, self.sql_table_list)),
-            (Dynamic_widget_Route, (self.keyset_map_dt, self.sql_db))
+            (Dynamic_widget_Route , (self.keyset_map_dt, self.sql_db))
         ]
 
         for route, extra_args in routes_with_extra_args:
@@ -210,7 +211,7 @@ class NeoAdeptApp:
             My_List_Route, Activity_Route,  Common_Route, Email_Route, 
             Register_Route, Permission_Route
         ]
-        self.app.register_blueprint(Login_Route('login_route', __name__,self.config,self.logger,self.db,self.keyset_map,self.session,self.server_private_key,self.decryption_apis),url_prefix=f"{versioned_prefix}")
+        self.app.register_blueprint(Login_Route('login_route', __name__,self.config,self.logger,self.db,self.keyset_map,self.server_private_key,self.decryption_apis),url_prefix=f"{versioned_prefix}")
         for route in routes_without_extra_args:
             route_name = route.__name__.lower().replace('_route', '')
             blueprint = route(route_name, __name__, *common_args)
@@ -233,7 +234,9 @@ class NeoAdeptApp:
     def index(self):
         @self.app.route('/', methods=['GET'])
         def index():
-            return f"{self.app_name} {self.config.version} {self.config.app_version} is running"
+            #session["permissions"] = None
+            #session["widget_enable_for_db"] = None
+            return f"{self.config.app_name} {self.config.version} {self.config.app_version} is running"
         
     def  load_private_key(self,db) :   
         key_document = db[COLLECTIONS.CONFIG_KEYS].find_one({"server_private_key": {"$exists": True}})
@@ -244,9 +247,13 @@ class NeoAdeptApp:
         server_private_key = load_pem_private_key(server_private_key_pem, password=None)
         decryption_apis = key_document.get("decryption_apis",None)    
         return server_private_key,decryption_apis 
-    
+
+NeoAdept_app = NeoAdeptApp('NeoAdept')
 if __name__ == "__main__":
-    NeoAdept_app = NeoAdeptApp('NeoAdept')
     NeoAdept_app.run()
 
-
+@NeoAdept_app.route('/initialize_session', methods=['POST'])
+def initialize_session():
+        session["permissions"] = None
+        session["widget_enable_for_db"] = None
+        return "Session initialized"
